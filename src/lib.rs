@@ -1,5 +1,7 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+pub fn generate(invoice_number: &str) -> String {
+    String::from(format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?> {invoice_number}"
+    ))
 }
 
 #[cfg(test)]
@@ -8,7 +10,10 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+        let result = generate("993433000298");
+        assert_eq!(
+            result,
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?> 993433000298"
+        );
     }
 }
