@@ -206,7 +206,7 @@ impl TaxItem {
 }
 
 pub struct DetailsItem<'a> {
-    description: &'a str,
+    description: Vec<&'a str>,
     quantity: f64,
     unit: &'a str,
     unit_price: f64,
@@ -223,13 +223,17 @@ impl DetailsItem<'_> {
     }
 
     fn as_xml(&self) -> String {
-        let description = self.description;
+        let description_vec: Vec<String> = (&self.description)
+            .into_iter()
+            .map(|d| format!("<Description>{d}</Description>"))
+            .collect();
+        let description = description_vec.join("");
         let quantity = self.quantity;
         let unit = self.unit;
         let unit_price = self.unit_price;
         let line_item_amount = self.line_item_amount();
         let tax_item_xml = self.tax_item.as_xml();
-        format!("<ListLineItem><Description>{description}</Description><Quantity Unit=\"{unit}\">{quantity}</Quantity><UnitPrice>{unit_price:.2}</UnitPrice>{tax_item_xml}<LineItemAmount>{line_item_amount:.2}</LineItemAmount></ListLineItem>")
+        format!("<ListLineItem>{description}<Quantity Unit=\"{unit}\">{quantity}</Quantity><UnitPrice>{unit_price:.2}</UnitPrice>{tax_item_xml}<LineItemAmount>{line_item_amount:.2}</LineItemAmount></ListLineItem>")
     }
 }
 
@@ -346,7 +350,7 @@ mod tests {
             Details {
                 items: vec![
                     DetailsItem {
-                        description: "Schraubenzieher",
+                        description: vec!["Schraubenzieher"],
                         quantity: 100.0,
                         unit: "C62",
                         unit_price: 10.20,
@@ -357,7 +361,7 @@ mod tests {
                         },
                     },
                     DetailsItem {
-                        description: "Handbuch zur Schraube",
+                        description: vec!["Handbuch zur Schraube"],
                         quantity: 1.0,
                         unit: "C62",
                         unit_price: 5.00,
