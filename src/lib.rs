@@ -65,10 +65,60 @@ impl FurtherIdentificationType {
     }
 }
 
+pub struct Address<'a> {
+    name: &'a str,
+    street: Option<&'a str>,
+    town: &'a str,
+    zip: &'a str,
+    country: &'a str,
+    country_code: Option<&'a str>,
+    phone: Option<Vec<&'a str>>,
+    email: Option<Vec<&'a str>>,
+}
+
+impl Address<'_> {
+    fn as_xml(&self) -> String {
+        let name = self.name;
+        let street = match self.street {
+            Some(s) => s,
+            None => "",
+        };
+        let town = self.town;
+        let zip = self.zip;
+        let country = self.country;
+        let country_code = match self.country_code {
+            Some(cc) => format!(" CountryCode=\"{cc}\""),
+            None => format!(""),
+        };
+        let phone = match &self.phone {
+            Some(p) => {
+                let p_vec: Vec<String> = p
+                    .into_iter()
+                    .map(|p| format!("<Phone>{p}</Phone>"))
+                    .collect();
+                p_vec.join("")
+            }
+            None => format!(""),
+        };
+        let email = match &self.email {
+            Some(e) => {
+                let e_vec: Vec<String> = e
+                    .into_iter()
+                    .map(|e| format!("<Email>{e}</Email>"))
+                    .collect();
+                e_vec.join("")
+            }
+            None => format!(""),
+        };
+        format!("<Address><Name>{name}</Name><Street>{street}</Street><Town>{town}</Town><ZIP>{zip}</ZIP><Country{country_code}>{country}</Country>{phone}{email}</Address>")
+    }
+}
+
 pub struct Biller<'a> {
     vat_identification_number: &'a str,
     further_identification: &'a str,
     further_identification_type: FurtherIdentificationType,
+    address: Option<Address<'a>>,
 }
 
 impl Biller<'_> {
@@ -76,7 +126,11 @@ impl Biller<'_> {
         let vat_identification_number = self.vat_identification_number;
         let further_identification = self.further_identification;
         let further_identification_type = self.further_identification_type.as_str();
-        format!("<Biller><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber><FurtherIdentification IdentificationType=\"{further_identification_type}\">{further_identification}</FurtherIdentification></Biller>")
+        let address = match &self.address {
+            Some(address) => address.as_xml(),
+            None => format!(""),
+        };
+        format!("<Biller><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber><FurtherIdentification IdentificationType=\"{further_identification_type}\">{further_identification}</FurtherIdentification>{address}</Biller>")
     }
 }
 
@@ -84,6 +138,7 @@ pub struct InvoiceRecipient<'a> {
     vat_identification_number: &'a str,
     further_identification: &'a str,
     further_identification_type: FurtherIdentificationType,
+    address: Option<Address<'a>>,
 }
 
 impl InvoiceRecipient<'_> {
@@ -91,7 +146,11 @@ impl InvoiceRecipient<'_> {
         let vat_identification_number = self.vat_identification_number;
         let further_identification = self.further_identification;
         let further_identification_type = self.further_identification_type.as_str();
-        format!("<InvoiceRecipient><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber><FurtherIdentification IdentificationType=\"{further_identification_type}\">{further_identification}</FurtherIdentification></InvoiceRecipient>")
+        let address = match &self.address {
+            Some(address) => address.as_xml(),
+            None => format!(""),
+        };
+        format!("<InvoiceRecipient><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber><FurtherIdentification IdentificationType=\"{further_identification_type}\">{further_identification}</FurtherIdentification>{address}</InvoiceRecipient>")
     }
 }
 
@@ -258,11 +317,31 @@ mod tests {
                 vat_identification_number: "ATU51507409",
                 further_identification: "0012345",
                 further_identification_type: FurtherIdentificationType::DVR,
+                address: Some(Address {
+                    name: "Schrauben Mustermann",
+                    street: Some("Lassallenstraße 5"),
+                    town: "Wien",
+                    zip: "1020",
+                    country: "Österreich",
+                    country_code: Some("AT"),
+                    phone: Some(vec!["+43 / 1 / 78 56 789"]),
+                    email: Some(vec!["schrauben@mustermann.at"]),
+                }),
             },
             InvoiceRecipient {
                 vat_identification_number: "ATU18708634",
                 further_identification: "7654543",
                 further_identification_type: FurtherIdentificationType::DVR,
+                address: Some(Address {
+                    name: "Mustermann GmbH",
+                    street: Some("Hauptstraße 10"),
+                    town: "Graz",
+                    zip: "8010",
+                    country: "Österreich",
+                    country_code: Some("AT"),
+                    phone: None,
+                    email: None,
+                }),
             },
             Details {
                 items: vec![
@@ -293,7 +372,7 @@ mod tests {
         );
         assert_eq!(
             result,
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"en\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">7654543</FurtherIdentification></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"C62\">100</Quantity><UnitPrice>10.20</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"C62\">1</Quantity><UnitPrice>5.00</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"en\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">7654543</FurtherIdentification><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"C62\">100</Quantity><UnitPrice>10.20</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"C62\">1</Quantity><UnitPrice>5.00</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
         );
     }
 }
