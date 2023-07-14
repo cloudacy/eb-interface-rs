@@ -66,8 +66,8 @@ impl FurtherIdentificationType {
 }
 
 pub struct FurtherIdentification<'a> {
-    id: &'a str,
-    id_type: FurtherIdentificationType,
+    pub id: &'a str,
+    pub id_type: FurtherIdentificationType,
 }
 
 impl FurtherIdentification<'_> {
@@ -81,14 +81,14 @@ impl FurtherIdentification<'_> {
 }
 
 pub struct Address<'a> {
-    name: &'a str,
-    street: Option<&'a str>,
-    town: &'a str,
-    zip: &'a str,
-    country: &'a str,
-    country_code: Option<&'a str>,
-    phone: Option<Vec<&'a str>>,
-    email: Option<Vec<&'a str>>,
+    pub name: &'a str,
+    pub street: Option<&'a str>,
+    pub town: &'a str,
+    pub zip: &'a str,
+    pub country: &'a str,
+    pub country_code: Option<&'a str>,
+    pub phone: Option<Vec<&'a str>>,
+    pub email: Option<Vec<&'a str>>,
 }
 
 impl Address<'_> {
@@ -130,9 +130,9 @@ impl Address<'_> {
 }
 
 pub struct Biller<'a> {
-    vat_identification_number: &'a str,
-    further_identification: Vec<FurtherIdentification<'a>>,
-    address: Option<Address<'a>>,
+    pub vat_identification_number: &'a str,
+    pub further_identification: Vec<FurtherIdentification<'a>>,
+    pub address: Option<Address<'a>>,
 }
 
 impl Biller<'_> {
@@ -152,9 +152,9 @@ impl Biller<'_> {
 }
 
 pub struct InvoiceRecipient<'a> {
-    vat_identification_number: &'a str,
-    further_identification: Vec<FurtherIdentification<'a>>,
-    address: Option<Address<'a>>,
+    pub vat_identification_number: &'a str,
+    pub further_identification: Vec<FurtherIdentification<'a>>,
+    pub address: Option<Address<'a>>,
 }
 
 impl InvoiceRecipient<'_> {
@@ -209,9 +209,9 @@ impl TaxCategory {
 }
 
 pub struct TaxItem {
-    taxable_amount: f64,
-    tax_percent: i32,
-    tax_category: TaxCategory,
+    pub taxable_amount: f64,
+    pub tax_percent: i32,
+    pub tax_category: TaxCategory,
 }
 
 impl TaxItem {
@@ -225,11 +225,11 @@ impl TaxItem {
 }
 
 pub struct DetailsItem<'a> {
-    description: Vec<&'a str>,
-    quantity: f64,
-    unit: &'a str,
-    unit_price: f64,
-    tax_item: TaxItem,
+    pub description: Vec<&'a str>,
+    pub quantity: f64,
+    pub unit: &'a str,
+    pub unit_price: f64,
+    pub tax_item: TaxItem,
 }
 
 impl DetailsItem<'_> {
@@ -257,7 +257,7 @@ impl DetailsItem<'_> {
 }
 
 pub struct Details<'a> {
-    items: Vec<DetailsItem<'a>>,
+    pub items: Vec<DetailsItem<'a>>,
 }
 
 impl Details<'_> {
