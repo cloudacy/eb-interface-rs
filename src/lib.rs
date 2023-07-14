@@ -65,6 +65,21 @@ impl FurtherIdentificationType {
     }
 }
 
+pub struct FurtherIdentification<'a> {
+    id: &'a str,
+    id_type: FurtherIdentificationType,
+}
+
+impl FurtherIdentification<'_> {
+    fn as_xml(&self) -> String {
+        let id = self.id;
+        let id_type = self.id_type.as_str();
+        format!(
+            "<FurtherIdentification IdentificationType=\"{id_type}\">{id}</FurtherIdentification>"
+        )
+    }
+}
+
 pub struct Address<'a> {
     name: &'a str,
     street: Option<&'a str>,
@@ -116,41 +131,45 @@ impl Address<'_> {
 
 pub struct Biller<'a> {
     vat_identification_number: &'a str,
-    further_identification: &'a str,
-    further_identification_type: FurtherIdentificationType,
+    further_identification: Vec<FurtherIdentification<'a>>,
     address: Option<Address<'a>>,
 }
 
 impl Biller<'_> {
     fn as_xml(&self) -> String {
         let vat_identification_number = self.vat_identification_number;
-        let further_identification = self.further_identification;
-        let further_identification_type = self.further_identification_type.as_str();
+        let further_identification_vec: Vec<String> = (&self.further_identification)
+            .into_iter()
+            .map(|id| id.as_xml())
+            .collect();
+        let further_identification = further_identification_vec.join("");
         let address = match &self.address {
             Some(address) => address.as_xml(),
             None => format!(""),
         };
-        format!("<Biller><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber><FurtherIdentification IdentificationType=\"{further_identification_type}\">{further_identification}</FurtherIdentification>{address}</Biller>")
+        format!("<Biller><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber>{further_identification}{address}</Biller>")
     }
 }
 
 pub struct InvoiceRecipient<'a> {
     vat_identification_number: &'a str,
-    further_identification: &'a str,
-    further_identification_type: FurtherIdentificationType,
+    further_identification: Vec<FurtherIdentification<'a>>,
     address: Option<Address<'a>>,
 }
 
 impl InvoiceRecipient<'_> {
     fn as_xml(&self) -> String {
         let vat_identification_number = self.vat_identification_number;
-        let further_identification = self.further_identification;
-        let further_identification_type = self.further_identification_type.as_str();
+        let further_identification_vec: Vec<String> = (&self.further_identification)
+            .into_iter()
+            .map(|id| id.as_xml())
+            .collect();
+        let further_identification = further_identification_vec.join("");
         let address = match &self.address {
             Some(address) => address.as_xml(),
             None => format!(""),
         };
-        format!("<InvoiceRecipient><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber><FurtherIdentification IdentificationType=\"{further_identification_type}\">{further_identification}</FurtherIdentification>{address}</InvoiceRecipient>")
+        format!("<InvoiceRecipient><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber>{further_identification}{address}</InvoiceRecipient>")
     }
 }
 
@@ -319,8 +338,10 @@ mod tests {
             "2020-01-01",
             Biller {
                 vat_identification_number: "ATU51507409",
-                further_identification: "0012345",
-                further_identification_type: FurtherIdentificationType::DVR,
+                further_identification: vec![FurtherIdentification {
+                    id: "0012345",
+                    id_type: FurtherIdentificationType::DVR,
+                }],
                 address: Some(Address {
                     name: "Schrauben Mustermann",
                     street: Some("Lassallenstraße 5"),
@@ -334,8 +355,7 @@ mod tests {
             },
             InvoiceRecipient {
                 vat_identification_number: "ATU18708634",
-                further_identification: "7654543",
-                further_identification_type: FurtherIdentificationType::DVR,
+                further_identification: vec![],
                 address: Some(Address {
                     name: "Mustermann GmbH",
                     street: Some("Hauptstraße 10"),
@@ -376,7 +396,7 @@ mod tests {
         );
         assert_eq!(
             result,
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">7654543</FurtherIdentification><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"C62\">100</Quantity><UnitPrice>10.20</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"C62\">1</Quantity><UnitPrice>5.00</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"C62\">100</Quantity><UnitPrice>10.20</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"C62\">1</Quantity><UnitPrice>5.00</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
         );
     }
 }
