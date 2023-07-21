@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
+
 pub enum DocumentType {
     CreditMemo,
     FinalSettlement,
@@ -209,8 +211,8 @@ impl TaxCategory {
 }
 
 pub struct TaxItem {
-    pub taxable_amount: f64,
-    pub tax_percent: i32,
+    pub taxable_amount: Decimal,
+    pub tax_percent: Decimal,
     pub tax_category: TaxCategory,
 }
 
@@ -219,26 +221,27 @@ impl TaxItem {
         let taxable_amount = self.taxable_amount;
         let tax_category_code = self.tax_category.as_str();
         let tax_percent = self.tax_percent;
-        let tax_amount = self.taxable_amount * self.tax_percent as f64 / 100.0;
-        format!("<TaxItem><TaxableAmount>{taxable_amount:.2}</TaxableAmount><TaxPercent TaxCategoryCode=\"{tax_category_code}\">{tax_percent}</TaxPercent><TaxAmount>{tax_amount:.2}</TaxAmount></TaxItem>")
+        let tax_amount = self.taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
+        format!("<TaxItem><TaxableAmount>{:.2}</TaxableAmount><TaxPercent TaxCategoryCode=\"{tax_category_code}\">{tax_percent}</TaxPercent><TaxAmount>{:.2}</TaxAmount></TaxItem>", taxable_amount.round_dp_with_strategy(2, MidpointAwayFromZero), tax_amount.round_dp_with_strategy(2, MidpointAwayFromZero))
     }
 }
 
 pub struct DetailsItem<'a> {
     pub description: Vec<&'a str>,
-    pub quantity: f64,
+    pub quantity: Decimal,
     pub unit: &'a str,
-    pub unit_price: f64,
+    pub unit_price: Decimal,
     pub tax_item: TaxItem,
 }
 
 impl DetailsItem<'_> {
-    fn line_item_amount(&self) -> f64 {
+    fn line_item_amount(&self) -> Decimal {
         self.quantity * self.unit_price /* / self.base_quantity + sum of surcharge_list_line_item.amount + sum of other_vat_able_tax_list_line_item.tax_amount - sum of reduction_list_line_item.amount */
     }
 
-    fn line_item_total_gross_amount(&self) -> f64 {
-        self.line_item_amount() * ((self.tax_item.tax_percent + 100) as f64 / 100.0)
+    fn line_item_total_gross_amount(&self) -> Decimal {
+        self.line_item_amount()
+            * ((self.tax_item.tax_percent + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
     }
 
     fn as_xml(&self) -> String {
@@ -247,12 +250,9 @@ impl DetailsItem<'_> {
             .map(|d| format!("<Description>{d}</Description>"))
             .collect();
         let description = description_vec.join("");
-        let quantity = self.quantity;
-        let unit = self.unit;
-        let unit_price = self.unit_price;
-        let line_item_amount = self.line_item_amount();
+        let unit: &str = self.unit;
         let tax_item_xml = self.tax_item.as_xml();
-        format!("<ListLineItem>{description}<Quantity Unit=\"{unit}\">{quantity}</Quantity><UnitPrice>{unit_price:.2}</UnitPrice>{tax_item_xml}<LineItemAmount>{line_item_amount:.2}</LineItemAmount></ListLineItem>")
+        format!("<ListLineItem>{description}<Quantity Unit=\"{unit}\">{:.4}</Quantity><UnitPrice>{:.4}</UnitPrice>{tax_item_xml}<LineItemAmount>{:.2}</LineItemAmount></ListLineItem>", self.quantity.round_dp_with_strategy(4, MidpointAwayFromZero), self.unit_price.round_dp_with_strategy(4, MidpointAwayFromZero), self.line_item_amount().round_dp_with_strategy(2, MidpointAwayFromZero))
     }
 }
 
@@ -286,18 +286,18 @@ pub fn generate(
     let details_xml = details.as_xml();
 
     // Collect all taxes, grouped by tuples of tax_percent and tax_category.
-    let mut tax_items: HashMap<(i32, TaxCategory), f64> = HashMap::new();
+    let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
     for i in &details.items {
         let k = (i.tax_item.tax_percent, i.tax_item.tax_category.clone());
         let s = match tax_items.get(&k) {
             Some(v) => v.clone(),
-            None => 0.0,
+            None => Decimal::ZERO,
         };
         tax_items.insert(k, s + i.line_item_amount());
     }
 
     // To get consistent results, sort by keys (tax_percent and tax_category).
-    let mut sorted_tax_item_entries: Vec<((i32, TaxCategory), f64)> =
+    let mut sorted_tax_item_entries: Vec<((Decimal, TaxCategory), Decimal)> =
         tax_items.into_iter().collect();
     sorted_tax_item_entries.sort_by_key(|k| (k.0 .0, k.0 .1.clone()));
 
@@ -314,17 +314,93 @@ pub fn generate(
         .collect();
     let tax_items_xml = tax_items_xml_vec.join("");
 
-    let total_gross_amount = (&details.items).into_iter().fold(0.0, |sum, i| sum + i.line_item_total_gross_amount()) /* sum of LineItemAmounts + sum of surcharges at root + sum of other_vat_able_taxes at root - sum of reductions at root */;
+    let total_gross_amount = (&details.items).into_iter().fold(Decimal::ZERO, |sum, i| sum + i.line_item_total_gross_amount()) /* + sum of surcharges at root + sum of other_vat_able_taxes at root - sum of reductions at root */;
     let payable_amount = total_gross_amount /* - prepaid_amount + rounding_amount + sum of below_the_lines_items */;
 
     String::from(format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><{document_type_str} xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"{generating_system}\" DocumentType=\"{document_type_str}\" InvoiceCurrency=\"{invoice_currency}\" DocumentTitle=\"{document_title}\" Language=\"{language}\"><InvoiceNumber>{invoice_number}</InvoiceNumber><InvoiceDate>{invoice_date}</InvoiceDate>{biller_xml}{invoice_recipient_xml}{details_xml}<Tax>{tax_items_xml}</Tax><TotalGrossAmount>{total_gross_amount:.2}</TotalGrossAmount><PayableAmount>{payable_amount:.2}</PayableAmount></{document_type_str}>"
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><{document_type_str} xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"{generating_system}\" DocumentType=\"{document_type_str}\" InvoiceCurrency=\"{invoice_currency}\" DocumentTitle=\"{document_title}\" Language=\"{language}\"><InvoiceNumber>{invoice_number}</InvoiceNumber><InvoiceDate>{invoice_date}</InvoiceDate>{biller_xml}{invoice_recipient_xml}{details_xml}<Tax>{tax_items_xml}</Tax><TotalGrossAmount>{}</TotalGrossAmount><PayableAmount>{}</PayableAmount></{document_type_str}>", total_gross_amount.round_dp_with_strategy(2, MidpointAwayFromZero), payable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
     ))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_decimal_macros::dec;
+
+    #[test]
+    fn round_line_item_amount_result_after_calculation() {
+        let quantity = dec!(0.005);
+        let unit_price = dec!(0.005);
+        let taxable_amount = quantity * unit_price;
+
+        let result = DetailsItem {
+            description: vec!["Sand"],
+            quantity: quantity,
+            unit: "KGM",
+            unit_price: unit_price,
+            tax_item: TaxItem {
+                taxable_amount: taxable_amount,
+                tax_percent: dec!(20),
+                tax_category: TaxCategory::S,
+            },
+        }
+        .as_xml();
+
+        assert_eq!(
+            result,
+            "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">0.0050</Quantity><UnitPrice>0.0050</UnitPrice><TaxItem><TaxableAmount>0.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>0.00</TaxAmount></TaxItem><LineItemAmount>0.00</LineItemAmount></ListLineItem>"
+        );
+    }
+
+    #[test]
+    fn rounds_correctly_up() {
+        let quantity = dec!(100.123456);
+        let unit_price = dec!(10.20005);
+        let taxable_amount = quantity * unit_price;
+
+        let result = DetailsItem {
+            description: vec!["Sand"],
+            quantity: quantity,
+            unit: "KGM",
+            unit_price: unit_price,
+            tax_item: TaxItem {
+                taxable_amount: taxable_amount,
+                tax_percent: dec!(20),
+                tax_category: TaxCategory::S,
+            },
+        }
+        .as_xml();
+
+        assert_eq!(
+            result,
+            "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1235</Quantity><UnitPrice>10.2001</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
+        );
+    }
+
+    #[test]
+    fn rounds_correctly_down() {
+        let quantity = dec!(100.12344);
+        let unit_price = dec!(10.20001);
+        let taxable_amount = quantity * unit_price;
+
+        let result = DetailsItem {
+            description: vec!["Sand"],
+            quantity: quantity,
+            unit: "KGM",
+            unit_price: unit_price,
+            tax_item: TaxItem {
+                taxable_amount: taxable_amount,
+                tax_percent: dec!(20),
+                tax_category: TaxCategory::S,
+            },
+        }
+        .as_xml();
+
+        assert_eq!(
+            result,
+            "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1234</Quantity><UnitPrice>10.2000</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
+        );
+    }
 
     #[test]
     fn it_works() {
@@ -371,23 +447,23 @@ mod tests {
                 items: vec![
                     DetailsItem {
                         description: vec!["Schraubenzieher"],
-                        quantity: 100.0,
-                        unit: "C62",
-                        unit_price: 10.20,
+                        quantity: dec!(100),
+                        unit: "STK",
+                        unit_price: dec!(10.20),
                         tax_item: TaxItem {
-                            taxable_amount: 1020.0,
-                            tax_percent: 20,
+                            taxable_amount: dec!(1020.00),
+                            tax_percent: dec!(20),
                             tax_category: TaxCategory::S,
                         },
                     },
                     DetailsItem {
                         description: vec!["Handbuch zur Schraube"],
-                        quantity: 1.0,
-                        unit: "C62",
-                        unit_price: 5.00,
+                        quantity: dec!(1),
+                        unit: "STK",
+                        unit_price: dec!(5.00),
                         tax_item: TaxItem {
-                            taxable_amount: 5.0,
-                            tax_percent: 10,
+                            taxable_amount: dec!(5.00),
+                            tax_percent: dec!(10),
                             tax_category: TaxCategory::S,
                         },
                     },
@@ -396,7 +472,7 @@ mod tests {
         );
         assert_eq!(
             result,
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"C62\">100</Quantity><UnitPrice>10.20</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"C62\">1</Quantity><UnitPrice>5.00</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"STK\">100.0000</Quantity><UnitPrice>10.2000</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice>5.0000</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
         );
     }
 }
