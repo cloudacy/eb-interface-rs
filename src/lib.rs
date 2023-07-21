@@ -131,10 +131,71 @@ impl Address<'_> {
     }
 }
 
+pub struct Contact<'a> {
+    pub salutation: Option<&'a str>,
+    pub name: &'a str,
+    pub phone: Option<Vec<&'a str>>,
+    pub email: Option<Vec<&'a str>>,
+}
+
+impl Contact<'_> {
+    fn as_xml(&self) -> String {
+        let salutation = match self.salutation {
+            Some(s) => format!("<Salutation>{s}</Salutation>"),
+            None => format!(""),
+        };
+        let name = self.name;
+        let phone = match &self.phone {
+            Some(p) => {
+                let p_vec: Vec<String> = p
+                    .into_iter()
+                    .map(|p| format!("<Phone>{p}</Phone>"))
+                    .collect();
+                p_vec.join("")
+            }
+            None => format!(""),
+        };
+        let email = match &self.email {
+            Some(e) => {
+                let e_vec: Vec<String> = e
+                    .into_iter()
+                    .map(|e| format!("<Email>{e}</Email>"))
+                    .collect();
+                e_vec.join("")
+            }
+            None => format!(""),
+        };
+        format!("<Contact>{salutation}<Name>{name}</Name>{phone}{email}</Contact>")
+    }
+}
+
+pub struct OrderReference<'a> {
+    pub order_id: &'a str,
+    pub reference_date: Option<&'a str>,
+    pub description: Option<&'a str>,
+}
+
+impl OrderReference<'_> {
+    fn as_xml(&self) -> String {
+        let order_id = self.order_id;
+        let reference_date = match self.reference_date {
+            Some(d) => format!("<ReferenceDate>{d}</ReferenceDate>"),
+            None => format!(""),
+        };
+        let description = match self.description {
+            Some(d) => format!("<Description>{d}</Description>"),
+            None => format!(""),
+        };
+        format!("<OrderReference><OrderID>{order_id}</OrderID>{reference_date}{description}</OrderReference>")
+    }
+}
+
 pub struct Biller<'a> {
     pub vat_identification_number: &'a str,
     pub further_identification: Vec<FurtherIdentification<'a>>,
+    pub order_reference: Option<OrderReference<'a>>,
     pub address: Option<Address<'a>>,
+    pub contact: Option<Contact<'a>>,
 }
 
 impl Biller<'_> {
@@ -145,18 +206,28 @@ impl Biller<'_> {
             .map(|id| id.as_xml())
             .collect();
         let further_identification = further_identification_vec.join("");
+        let order_reference = match &self.order_reference {
+            Some(order_reference) => order_reference.as_xml(),
+            None => format!(""),
+        };
         let address = match &self.address {
             Some(address) => address.as_xml(),
             None => format!(""),
         };
-        format!("<Biller><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber>{further_identification}{address}</Biller>")
+        let contact = match &self.contact {
+            Some(contact) => contact.as_xml(),
+            None => format!(""),
+        };
+        format!("<Biller><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber>{further_identification}{order_reference}{address}{contact}</Biller>")
     }
 }
 
 pub struct InvoiceRecipient<'a> {
     pub vat_identification_number: &'a str,
     pub further_identification: Vec<FurtherIdentification<'a>>,
+    pub order_reference: Option<OrderReference<'a>>,
     pub address: Option<Address<'a>>,
+    pub contact: Option<Contact<'a>>,
 }
 
 impl InvoiceRecipient<'_> {
@@ -167,11 +238,19 @@ impl InvoiceRecipient<'_> {
             .map(|id| id.as_xml())
             .collect();
         let further_identification = further_identification_vec.join("");
+        let order_reference = match &self.order_reference {
+            Some(order_reference) => order_reference.as_xml(),
+            None => format!(""),
+        };
         let address = match &self.address {
             Some(address) => address.as_xml(),
             None => format!(""),
         };
-        format!("<InvoiceRecipient><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber>{further_identification}{address}</InvoiceRecipient>")
+        let contact = match &self.contact {
+            Some(contact) => contact.as_xml(),
+            None => format!(""),
+        };
+        format!("<InvoiceRecipient><VATIdentificationNumber>{vat_identification_number}</VATIdentificationNumber>{further_identification}{order_reference}{address}{contact}</InvoiceRecipient>")
     }
 }
 
@@ -232,12 +311,17 @@ pub struct DetailsItem<'a> {
     pub quantity: Decimal,
     pub unit: &'a str,
     pub unit_price: Decimal,
+    pub base_quantity: Option<Decimal>,
     pub tax_item: TaxItem,
 }
 
 impl DetailsItem<'_> {
     fn line_item_amount(&self) -> Decimal {
-        self.quantity * self.unit_price /* / self.base_quantity + sum of surcharge_list_line_item.amount + sum of other_vat_able_tax_list_line_item.tax_amount - sum of reduction_list_line_item.amount */
+        let base_quantity = match self.base_quantity {
+            Some(bq) => bq,
+            None => Decimal::ONE,
+        };
+        self.quantity * self.unit_price / base_quantity /* + sum of surcharge_list_line_item.amount + sum of other_vat_able_tax_list_line_item.tax_amount - sum of reduction_list_line_item.amount */
     }
 
     fn line_item_total_gross_amount(&self) -> Decimal {
@@ -256,8 +340,12 @@ impl DetailsItem<'_> {
             .collect();
         let description = description_vec.join("");
         let unit: &str = self.unit;
+        let base_quantity = match self.base_quantity {
+            Some(bq) => format!(" BaseQuantity=\"{bq}\""),
+            None => format!(""),
+        };
         let tax_item_xml = self.tax_item.as_xml();
-        format!("<ListLineItem>{position_number}{description}<Quantity Unit=\"{unit}\">{:.4}</Quantity><UnitPrice>{:.4}</UnitPrice>{tax_item_xml}<LineItemAmount>{:.2}</LineItemAmount></ListLineItem>", self.quantity.round_dp_with_strategy(4, MidpointAwayFromZero), self.unit_price.round_dp_with_strategy(4, MidpointAwayFromZero), self.line_item_amount().round_dp_with_strategy(2, MidpointAwayFromZero))
+        format!("<ListLineItem>{position_number}{description}<Quantity Unit=\"{unit}\">{:.4}</Quantity><UnitPrice{base_quantity}>{:.4}</UnitPrice>{tax_item_xml}<LineItemAmount>{:.2}</LineItemAmount></ListLineItem>", self.quantity.round_dp_with_strategy(4, MidpointAwayFromZero), self.unit_price.round_dp_with_strategy(4, MidpointAwayFromZero), self.line_item_amount().round_dp_with_strategy(2, MidpointAwayFromZero))
     }
 }
 
@@ -344,6 +432,7 @@ mod tests {
             quantity: quantity,
             unit: "KGM",
             unit_price: unit_price,
+            base_quantity: None,
             tax_item: TaxItem {
                 taxable_amount: taxable_amount,
                 tax_percent: dec!(20),
@@ -370,6 +459,7 @@ mod tests {
             quantity: quantity,
             unit: "KGM",
             unit_price: unit_price,
+            base_quantity: None,
             tax_item: TaxItem {
                 taxable_amount: taxable_amount,
                 tax_percent: dec!(20),
@@ -396,6 +486,7 @@ mod tests {
             quantity: quantity,
             unit: "KGM",
             unit_price: unit_price,
+            base_quantity: None,
             tax_item: TaxItem {
                 taxable_amount: taxable_amount,
                 tax_percent: dec!(20),
@@ -426,6 +517,7 @@ mod tests {
                     id: "0012345",
                     id_type: FurtherIdentificationType::DVR,
                 }],
+                order_reference: None,
                 address: Some(Address {
                     name: "Schrauben Mustermann",
                     street: Some("Lassallenstraße 5"),
@@ -436,10 +528,16 @@ mod tests {
                     phone: Some(vec!["+43 / 1 / 78 56 789"]),
                     email: Some(vec!["schrauben@mustermann.at"]),
                 }),
+                contact: None,
             },
             InvoiceRecipient {
                 vat_identification_number: "ATU18708634",
                 further_identification: vec![],
+                order_reference: Some(OrderReference {
+                    order_id: "test",
+                    reference_date: None,
+                    description: None,
+                }),
                 address: Some(Address {
                     name: "Mustermann GmbH",
                     street: Some("Hauptstraße 10"),
@@ -450,6 +548,12 @@ mod tests {
                     phone: None,
                     email: None,
                 }),
+                contact: Some(Contact {
+                    salutation: None,
+                    name: "Max Mustermann",
+                    phone: None,
+                    email: Some(vec!["schrauben@mustermann.at"]),
+                }),
             },
             Details {
                 items: vec![
@@ -459,6 +563,7 @@ mod tests {
                         quantity: dec!(100),
                         unit: "STK",
                         unit_price: dec!(10.20),
+                        base_quantity: Some(dec!(1)),
                         tax_item: TaxItem {
                             taxable_amount: dec!(1020.00),
                             tax_percent: dec!(20),
@@ -471,18 +576,20 @@ mod tests {
                         quantity: dec!(1),
                         unit: "STK",
                         unit_price: dec!(5.00),
+                        base_quantity: Some(dec!(1)),
                         tax_item: TaxItem {
                             taxable_amount: dec!(5.00),
                             tax_percent: dec!(10),
-                            tax_category: TaxCategory::S,
+                            tax_category: TaxCategory::AA,
                         },
                     },
                 ],
             },
         );
+
         assert_eq!(
             result,
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address></InvoiceRecipient><Details><ItemList><ListLineItem><PositionNumber>1</PositionNumber><Description>Schraubenzieher</Description><Quantity Unit=\"STK\">100.0000</Quantity><UnitPrice>10.2000</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><PositionNumber>2</PositionNumber><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice>5.0000</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><OrderReference><OrderID>test</OrderID></OrderReference><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address><Contact><Name>Max Mustermann</Name><Email>schrauben@mustermann.at</Email></Contact></InvoiceRecipient><Details><ItemList><ListLineItem><PositionNumber>1</PositionNumber><Description>Schraubenzieher</Description><Quantity Unit=\"STK\">100.0000</Quantity><UnitPrice BaseQuantity=\"1\">10.2000</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><PositionNumber>2</PositionNumber><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice BaseQuantity=\"1\">5.0000</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
         );
     }
 }
