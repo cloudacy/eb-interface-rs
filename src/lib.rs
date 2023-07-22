@@ -1,5 +1,6 @@
 pub mod address;
 pub mod contact;
+pub mod document;
 pub mod tax;
 
 use std::collections::HashMap;
@@ -8,33 +9,8 @@ use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
 
 use address::Address;
 use contact::Contact;
+use document::DocumentType;
 use tax::{TaxCategory, TaxItem};
-
-pub enum DocumentType {
-    CreditMemo,
-    FinalSettlement,
-    Invoice,
-    InvoiceForAdvancePayment,
-    InvoiceForPartialDelivery,
-    SelfBilling,
-    SubsequentCredit,
-    SubsequentDebit,
-}
-
-impl DocumentType {
-    fn as_str(&self) -> &str {
-        match self {
-            DocumentType::CreditMemo => "CreditMemo",
-            DocumentType::FinalSettlement => "FinalSettlement",
-            DocumentType::Invoice => "Invoice",
-            DocumentType::InvoiceForAdvancePayment => "InvoiceForAdvancePayment",
-            DocumentType::InvoiceForPartialDelivery => "InvoiceForPartialDelivery",
-            DocumentType::SelfBilling => "SelfBilling",
-            DocumentType::SubsequentCredit => "SubsequentCredit",
-            DocumentType::SubsequentDebit => "SubsequentDebit",
-        }
-    }
-}
 
 pub enum FurtherIdentificationType {
     ARA,
