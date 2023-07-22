@@ -33,15 +33,15 @@ impl Invoice<'_> {
         details: Details<'a>,
     ) -> Invoice<'a> {
         Invoice {
-            generating_system: generating_system,
-            invoice_currency: invoice_currency,
-            document_title: document_title,
-            language: language,
-            invoice_number: invoice_number,
-            invoice_date: invoice_date,
-            biller: biller,
-            invoice_recipient: invoice_recipient,
-            details: details,
+            generating_system,
+            invoice_currency,
+            document_title,
+            language,
+            invoice_number,
+            invoice_date,
+            biller,
+            invoice_recipient,
+            details,
         }
     }
 
