@@ -5,7 +5,7 @@ use crate::{
 
 pub struct InvoiceRecipient<'a> {
     pub vat_identification_number: &'a str,
-    pub further_identification: Vec<FurtherIdentification<'a>>,
+    pub further_identification: Option<Vec<FurtherIdentification<'a>>>,
     pub order_reference: Option<OrderReference<'a>>,
     pub address: Option<Address<'a>>,
     pub contact: Option<Contact<'a>>,
@@ -14,11 +14,14 @@ pub struct InvoiceRecipient<'a> {
 impl InvoiceRecipient<'_> {
     pub fn as_xml(&self) -> String {
         let vat_identification_number = self.vat_identification_number;
-        let further_identification_vec: Vec<String> = (&self.further_identification)
-            .into_iter()
-            .map(|id| id.as_xml())
-            .collect();
-        let further_identification = further_identification_vec.join("");
+        let further_identification = match &self.further_identification {
+            Some(fi) => {
+                let further_identification_vec: Vec<String> =
+                    fi.into_iter().map(|id| id.as_xml()).collect();
+                further_identification_vec.join("")
+            }
+            None => format!(""),
+        };
         let order_reference = match &self.order_reference {
             Some(order_reference) => order_reference.as_xml(),
             None => format!(""),

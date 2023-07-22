@@ -116,10 +116,10 @@ mod tests {
             "2020-01-01",
             Biller {
                 vat_identification_number: "ATU51507409",
-                further_identification: vec![FurtherIdentification {
+                further_identification: Some(vec![FurtherIdentification {
                     id: "0012345",
                     id_type: FurtherIdentificationType::DVR,
-                }],
+                }]),
                 order_reference: None,
                 address: Some(Address {
                     name: "Schrauben Mustermann",
@@ -135,7 +135,7 @@ mod tests {
             },
             InvoiceRecipient {
                 vat_identification_number: "ATU18708634",
-                further_identification: vec![],
+                further_identification: None,
                 order_reference: Some(OrderReference {
                     order_id: "test",
                     reference_date: None,
