@@ -1,4 +1,5 @@
 pub mod address;
+pub mod contact;
 pub mod tax;
 
 use std::collections::HashMap;
@@ -6,6 +7,7 @@ use std::collections::HashMap;
 use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
 
 use address::Address;
+use contact::Contact;
 use tax::{TaxCategory, TaxItem};
 
 pub enum DocumentType {
@@ -85,44 +87,6 @@ impl FurtherIdentification<'_> {
         format!(
             "<FurtherIdentification IdentificationType=\"{id_type}\">{id}</FurtherIdentification>"
         )
-    }
-}
-
-pub struct Contact<'a> {
-    pub salutation: Option<&'a str>,
-    pub name: &'a str,
-    pub phone: Option<Vec<&'a str>>,
-    pub email: Option<Vec<&'a str>>,
-}
-
-impl Contact<'_> {
-    fn as_xml(&self) -> String {
-        let salutation = match self.salutation {
-            Some(s) => format!("<Salutation>{s}</Salutation>"),
-            None => format!(""),
-        };
-        let name = self.name;
-        let phone = match &self.phone {
-            Some(p) => {
-                let p_vec: Vec<String> = p
-                    .into_iter()
-                    .map(|p| format!("<Phone>{p}</Phone>"))
-                    .collect();
-                p_vec.join("")
-            }
-            None => format!(""),
-        };
-        let email = match &self.email {
-            Some(e) => {
-                let e_vec: Vec<String> = e
-                    .into_iter()
-                    .map(|e| format!("<Email>{e}</Email>"))
-                    .collect();
-                e_vec.join("")
-            }
-            None => format!(""),
-        };
-        format!("<Contact>{salutation}<Name>{name}</Name>{phone}{email}</Contact>")
     }
 }
 
