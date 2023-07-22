@@ -4,73 +4,10 @@ pub mod contact;
 pub mod details;
 pub mod document;
 pub mod identification;
+pub mod invoice;
 pub mod invoice_recipient;
 pub mod order_reference;
 pub mod tax;
-
-use std::collections::HashMap;
-
-use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
-
-use biller::Biller;
-use details::Details;
-use document::DocumentType;
-use invoice_recipient::InvoiceRecipient;
-use tax::{TaxCategory, TaxItem};
-
-pub fn generate(
-    document_type: DocumentType,
-    generating_system: &str,
-    invoice_currency: &str,
-    document_title: &str,
-    language: &str,
-    invoice_number: &str,
-    invoice_date: &str,
-    biller: Biller,
-    invoice_recipient: InvoiceRecipient,
-    details: Details,
-) -> String {
-    let document_type_str = document_type.as_str();
-    let biller_xml = biller.as_xml();
-    let invoice_recipient_xml = invoice_recipient.as_xml();
-    let details_xml = details.as_xml();
-
-    // Collect all taxes, grouped by tuples of tax_percent and tax_category.
-    let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
-    for i in &details.items {
-        let k = (i.tax_item.tax_percent, i.tax_item.tax_category.clone());
-        let s = match tax_items.get(&k) {
-            Some(v) => v.clone(),
-            None => Decimal::ZERO,
-        };
-        tax_items.insert(k, s + i.line_item_amount());
-    }
-
-    // To get consistent results, sort by keys (tax_percent and tax_category).
-    let mut sorted_tax_item_entries: Vec<((Decimal, TaxCategory), Decimal)> =
-        tax_items.into_iter().collect();
-    sorted_tax_item_entries.sort_by_key(|k| (k.0 .0, k.0 .1.clone()));
-
-    let tax_items_xml_vec: Vec<String> = sorted_tax_item_entries
-        .into_iter()
-        .map(|e| {
-            TaxItem {
-                taxable_amount: e.1,
-                tax_percent: e.0 .0,
-                tax_category: e.0 .1,
-            }
-            .as_xml()
-        })
-        .collect();
-    let tax_items_xml = tax_items_xml_vec.join("");
-
-    let total_gross_amount = (&details.items).into_iter().fold(Decimal::ZERO, |sum, i| sum + i.line_item_total_gross_amount()) /* + sum of surcharges at root + sum of other_vat_able_taxes at root - sum of reductions at root */;
-    let payable_amount = total_gross_amount /* - prepaid_amount + rounding_amount + sum of below_the_lines_items */;
-
-    String::from(format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><{document_type_str} xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"{generating_system}\" DocumentType=\"{document_type_str}\" InvoiceCurrency=\"{invoice_currency}\" DocumentTitle=\"{document_title}\" Language=\"{language}\"><InvoiceNumber>{invoice_number}</InvoiceNumber><InvoiceDate>{invoice_date}</InvoiceDate>{biller_xml}{invoice_recipient_xml}{details_xml}<Tax>{tax_items_xml}</Tax><TotalGrossAmount>{:.2}</TotalGrossAmount><PayableAmount>{:.2}</PayableAmount></{document_type_str}>", total_gross_amount.round_dp_with_strategy(2, MidpointAwayFromZero), payable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-    ))
-}
 
 #[cfg(test)]
 mod tests {
@@ -78,10 +15,14 @@ mod tests {
     use rust_decimal_macros::dec;
 
     use address::Address;
+    use biller::Biller;
     use contact::Contact;
-    use details::DetailsItem;
+    use details::{Details, DetailsItem};
     use identification::{FurtherIdentification, FurtherIdentificationType};
+    use invoice::Invoice;
+    use invoice_recipient::InvoiceRecipient;
     use order_reference::OrderReference;
+    use tax::{TaxCategory, TaxItem};
 
     #[test]
     fn round_line_item_amount_result_after_calculation() {
@@ -166,8 +107,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = generate(
-            DocumentType::Invoice,
+        let result = Invoice::new(
             "test",
             "EUR",
             "An invoice",
@@ -248,7 +188,8 @@ mod tests {
                     },
                 ],
             },
-        );
+        )
+        .as_xml();
 
         assert_eq!(
             result,
