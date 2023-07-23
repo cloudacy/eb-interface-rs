@@ -8,6 +8,7 @@ pub mod invoice;
 pub mod invoice_recipient;
 pub mod order_reference;
 pub mod tax;
+pub mod xml;
 
 #[cfg(test)]
 mod tests {
@@ -23,6 +24,7 @@ mod tests {
     use invoice_recipient::InvoiceRecipient;
     use order_reference::OrderReference;
     use tax::{TaxCategory, TaxItem};
+    use xml::XmlAsString;
 
     #[test]
     fn round_line_item_amount_result_after_calculation() {
@@ -46,7 +48,7 @@ mod tests {
         .as_xml();
 
         assert_eq!(
-            result,
+            result.as_str(),
             "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">0.0050</Quantity><UnitPrice>0.0050</UnitPrice><TaxItem><TaxableAmount>0.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>0.00</TaxAmount></TaxItem><LineItemAmount>0.00</LineItemAmount></ListLineItem>"
         );
     }
@@ -73,7 +75,7 @@ mod tests {
         .as_xml();
 
         assert_eq!(
-            result,
+            result.as_str(),
             "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1235</Quantity><UnitPrice>10.2001</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
         );
     }
@@ -100,7 +102,7 @@ mod tests {
         .as_xml();
 
         assert_eq!(
-            result,
+            result.as_str(),
             "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1234</Quantity><UnitPrice>10.2000</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
         );
     }

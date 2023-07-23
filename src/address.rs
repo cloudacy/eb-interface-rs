@@ -1,3 +1,5 @@
+use crate::xml::XmlElement;
+
 pub struct Address<'a> {
     pub name: &'a str,
     pub street: Option<&'a str>,
@@ -10,39 +12,35 @@ pub struct Address<'a> {
 }
 
 impl Address<'_> {
-    pub fn as_xml(&self) -> String {
-        let name = self.name;
-        let street = match self.street {
-            Some(s) => s,
-            None => "",
-        };
-        let town = self.town;
-        let zip = self.zip;
-        let country = self.country;
-        let country_code = match self.country_code {
-            Some(cc) => format!(" CountryCode=\"{cc}\""),
-            None => format!(""),
-        };
-        let phone = match &self.phone {
-            Some(p) => {
-                let p_vec: Vec<String> = p
-                    .into_iter()
-                    .map(|p| format!("<Phone>{p}</Phone>"))
-                    .collect();
-                p_vec.join("")
+    pub fn as_xml(&self) -> XmlElement {
+        let mut e = XmlElement::new("Address").with_text_element("Name", self.name);
+
+        if let Some(s) = self.street {
+            e = e.with_text_element("Street", s);
+        }
+
+        e = e
+            .with_text_element("Town", self.town)
+            .with_text_element("ZIP", self.zip);
+
+        let mut ce = XmlElement::new("Country").with_text(self.country);
+        if let Some(cc) = self.country_code {
+            ce = ce.with_attr("CountryCode", cc);
+        }
+        e = e.with_element(ce);
+
+        if let Some(phone_numbers) = &self.phone {
+            for phone_number in phone_numbers {
+                e = e.with_text_element("Phone", phone_number);
             }
-            None => format!(""),
-        };
-        let email = match &self.email {
-            Some(e) => {
-                let e_vec: Vec<String> = e
-                    .into_iter()
-                    .map(|e| format!("<Email>{e}</Email>"))
-                    .collect();
-                e_vec.join("")
+        }
+
+        if let Some(email_addresses) = &self.email {
+            for email_address in email_addresses {
+                e = e.with_text_element("Email", email_address);
             }
-            None => format!(""),
-        };
-        format!("<Address><Name>{name}</Name><Street>{street}</Street><Town>{town}</Town><ZIP>{zip}</ZIP><Country{country_code}>{country}</Country>{phone}{email}</Address>")
+        }
+
+        e
     }
 }

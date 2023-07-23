@@ -1,3 +1,5 @@
+use crate::xml::XmlElement;
+
 pub enum FurtherIdentificationType {
     ARA,
     #[allow(non_camel_case_types)]
@@ -43,11 +45,9 @@ pub struct FurtherIdentification<'a> {
 }
 
 impl FurtherIdentification<'_> {
-    pub fn as_xml(&self) -> String {
-        let id = self.id;
-        let id_type = self.id_type.as_str();
-        format!(
-            "<FurtherIdentification IdentificationType=\"{id_type}\">{id}</FurtherIdentification>"
-        )
+    pub fn as_xml(&self) -> XmlElement {
+        XmlElement::new("FurtherIdentification")
+            .with_attr("IdentificationType", self.id_type.as_str())
+            .with_text(self.id)
     }
 }

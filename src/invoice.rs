@@ -6,6 +6,7 @@ use crate::{
     details::Details,
     invoice_recipient::InvoiceRecipient,
     tax::{TaxCategory, TaxItem},
+    xml::{XmlAsString, XmlElement},
 };
 
 pub struct Invoice<'a> {
@@ -46,10 +47,6 @@ impl Invoice<'_> {
     }
 
     pub fn as_xml(&self) -> String {
-        let biller_xml = self.biller.as_xml();
-        let invoice_recipient_xml = self.invoice_recipient.as_xml();
-        let details_xml = self.details.as_xml();
-
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {
@@ -66,7 +63,7 @@ impl Invoice<'_> {
             tax_items.into_iter().collect();
         sorted_tax_item_entries.sort_by_key(|k| (k.0 .0, k.0 .1.clone()));
 
-        let tax_items_xml_vec: Vec<String> = sorted_tax_item_entries
+        let tax_item_xmls: Vec<XmlElement> = sorted_tax_item_entries
             .into_iter()
             .map(|e| {
                 TaxItem {
@@ -77,13 +74,46 @@ impl Invoice<'_> {
                 .as_xml()
             })
             .collect();
-        let tax_items_xml = tax_items_xml_vec.join("");
+
+        let mut tax = XmlElement::new("Tax");
+        for tax_item_xml in tax_item_xmls {
+            tax = tax.with_element(tax_item_xml);
+        }
 
         let total_gross_amount = (&self.details.items).into_iter().fold(Decimal::ZERO, |sum, i| sum + i.line_item_total_gross_amount()) /* + sum of surcharges at root + sum of other_vat_able_taxes at root - sum of reductions at root */;
         let payable_amount = total_gross_amount /* - prepaid_amount + rounding_amount + sum of below_the_lines_items */;
 
+        let invoice = XmlElement::new("Invoice")
+            .with_attr("xmlns", "http://www.ebinterface.at/schema/6p1/")
+            .with_attr("GeneratingSystem", self.generating_system)
+            .with_attr("DocumentType", "Invoice")
+            .with_attr("InvoiceCurrency", self.invoice_currency)
+            .with_attr("DocumentTitle", self.document_title)
+            .with_attr("Language", self.language)
+            .with_text_element("InvoiceNumber", self.invoice_number)
+            .with_text_element("InvoiceDate", self.invoice_date)
+            .with_element(self.biller.as_xml())
+            .with_element(self.invoice_recipient.as_xml())
+            .with_element(self.details.as_xml())
+            .with_element(tax)
+            .with_text_element(
+                "TotalGrossAmount",
+                &format!(
+                    "{:.2}",
+                    total_gross_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
+                ),
+            )
+            .with_text_element(
+                "PayableAmount",
+                &format!(
+                    "{:.2}",
+                    payable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
+                ),
+            );
+
         format!(
-          "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"{}\" DocumentType=\"Invoice\" InvoiceCurrency=\"{}\" DocumentTitle=\"{}\" Language=\"{}\"><InvoiceNumber>{}</InvoiceNumber><InvoiceDate>{}</InvoiceDate>{biller_xml}{invoice_recipient_xml}{details_xml}<Tax>{tax_items_xml}</Tax><TotalGrossAmount>{:.2}</TotalGrossAmount><PayableAmount>{:.2}</PayableAmount></Invoice>", self.generating_system, self.invoice_currency, self.document_title, self.language, self.invoice_number, self.invoice_date, total_gross_amount.round_dp_with_strategy(2, MidpointAwayFromZero), payable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-      )
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>{}",
+            invoice.as_str()
+        )
     }
 }

@@ -1,3 +1,5 @@
+use crate::xml::XmlElement;
+
 pub struct OrderReference<'a> {
     pub order_id: &'a str,
     pub reference_date: Option<&'a str>,
@@ -5,16 +7,17 @@ pub struct OrderReference<'a> {
 }
 
 impl OrderReference<'_> {
-    pub fn as_xml(&self) -> String {
-        let order_id = self.order_id;
-        let reference_date = match self.reference_date {
-            Some(d) => format!("<ReferenceDate>{d}</ReferenceDate>"),
-            None => format!(""),
-        };
-        let description = match self.description {
-            Some(d) => format!("<Description>{d}</Description>"),
-            None => format!(""),
-        };
-        format!("<OrderReference><OrderID>{order_id}</OrderID>{reference_date}{description}</OrderReference>")
+    pub fn as_xml(&self) -> XmlElement {
+        let mut e = XmlElement::new("OrderReference").with_text_element("OrderID", self.order_id);
+
+        if let Some(d) = self.reference_date {
+            e = e.with_text_element("ReferenceDate", d);
+        }
+
+        if let Some(d) = self.description {
+            e = e.with_text_element("Description", d);
+        }
+
+        e
     }
 }

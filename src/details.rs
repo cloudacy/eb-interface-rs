@@ -1,6 +1,5 @@
+use crate::{tax::TaxItem, xml::XmlElement};
 use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
-
-use crate::tax::TaxItem;
 
 pub struct DetailsItem<'a> {
     pub position_number: Option<u64>,
@@ -26,23 +25,49 @@ impl DetailsItem<'_> {
             * ((self.tax_item.tax_percent + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
     }
 
-    pub fn as_xml(&self) -> String {
-        let position_number = match self.position_number {
-            Some(pn) => format!("<PositionNumber>{pn}</PositionNumber>"),
-            None => format!(""),
-        };
-        let description_vec: Vec<String> = (&self.description)
-            .into_iter()
-            .map(|d| format!("<Description>{d}</Description>"))
-            .collect();
-        let description = description_vec.join("");
-        let unit: &str = self.unit;
-        let base_quantity = match self.base_quantity {
-            Some(bq) => format!(" BaseQuantity=\"{bq}\""),
-            None => format!(""),
-        };
-        let tax_item_xml = self.tax_item.as_xml();
-        format!("<ListLineItem>{position_number}{description}<Quantity Unit=\"{unit}\">{:.4}</Quantity><UnitPrice{base_quantity}>{:.4}</UnitPrice>{tax_item_xml}<LineItemAmount>{:.2}</LineItemAmount></ListLineItem>", self.quantity.round_dp_with_strategy(4, MidpointAwayFromZero), self.unit_price.round_dp_with_strategy(4, MidpointAwayFromZero), self.line_item_amount().round_dp_with_strategy(2, MidpointAwayFromZero))
+    pub fn as_xml(&self) -> XmlElement {
+        let mut e = XmlElement::new("ListLineItem");
+
+        if let Some(pn) = self.position_number {
+            e = e.with_text_element("PositionNumber", &format!("{pn}"));
+        }
+
+        for description in &self.description {
+            e = e.with_text_element("Description", description);
+        }
+
+        e = e.with_element(
+            XmlElement::new("Quantity")
+                .with_attr("Unit", self.unit)
+                .with_text(&format!(
+                    "{:.4}",
+                    self.quantity
+                        .round_dp_with_strategy(4, MidpointAwayFromZero)
+                )),
+        );
+
+        let mut up = XmlElement::new("UnitPrice").with_text(&format!(
+            "{:.4}",
+            self.unit_price
+                .round_dp_with_strategy(4, MidpointAwayFromZero)
+        ));
+        if let Some(bq) = &self.base_quantity {
+            up = up.with_attr("BaseQuantity", &format!("{bq}"))
+        }
+        e = e.with_element(up);
+
+        e = e.with_element(self.tax_item.as_xml());
+
+        e = e.with_text_element(
+            "LineItemAmount",
+            &format!(
+                "{:.2}",
+                self.line_item_amount()
+                    .round_dp_with_strategy(2, MidpointAwayFromZero)
+            ),
+        );
+
+        e
     }
 }
 
@@ -51,9 +76,15 @@ pub struct Details<'a> {
 }
 
 impl Details<'_> {
-    pub fn as_xml(&self) -> String {
-        let items_xml_vec: Vec<String> = (&self.items).into_iter().map(|l| l.as_xml()).collect();
-        let items_xml = items_xml_vec.join("");
-        format!("<Details><ItemList>{items_xml}</ItemList></Details>")
+    pub fn as_xml(&self) -> XmlElement {
+        let mut e = XmlElement::new("Details");
+
+        let mut ie = XmlElement::new("ItemList");
+        for item in &self.items {
+            ie = ie.with_element(item.as_xml());
+        }
+        e = e.with_element(ie);
+
+        e
     }
 }

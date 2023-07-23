@@ -1,3 +1,5 @@
+use crate::xml::XmlElement;
+
 pub struct Contact<'a> {
     pub salutation: Option<&'a str>,
     pub name: &'a str,
@@ -6,32 +8,27 @@ pub struct Contact<'a> {
 }
 
 impl Contact<'_> {
-    pub fn as_xml(&self) -> String {
-        let salutation = match self.salutation {
-            Some(s) => format!("<Salutation>{s}</Salutation>"),
-            None => format!(""),
-        };
-        let name = self.name;
-        let phone = match &self.phone {
-            Some(p) => {
-                let p_vec: Vec<String> = p
-                    .into_iter()
-                    .map(|p| format!("<Phone>{p}</Phone>"))
-                    .collect();
-                p_vec.join("")
+    pub fn as_xml(&self) -> XmlElement {
+        let mut e = XmlElement::new("Contact");
+
+        if let Some(s) = self.salutation {
+            e = e.with_text_element("Salutation", s);
+        }
+
+        e = e.with_text_element("Name", self.name);
+
+        if let Some(phone_numbers) = &self.phone {
+            for phone_number in phone_numbers {
+                e = e.with_text_element("Phone", phone_number);
             }
-            None => format!(""),
-        };
-        let email = match &self.email {
-            Some(e) => {
-                let e_vec: Vec<String> = e
-                    .into_iter()
-                    .map(|e| format!("<Email>{e}</Email>"))
-                    .collect();
-                e_vec.join("")
+        }
+
+        if let Some(email_addresses) = &self.email {
+            for email_address in email_addresses {
+                e = e.with_text_element("Email", email_address);
             }
-            None => format!(""),
-        };
-        format!("<Contact>{salutation}<Name>{name}</Name>{phone}{email}</Contact>")
+        }
+
+        e
     }
 }
