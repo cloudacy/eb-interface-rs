@@ -37,22 +37,20 @@ impl TaxCategory {
 }
 
 pub struct TaxItem {
-    pub taxable_amount: Decimal,
     pub tax_percent: Decimal,
     pub tax_category: TaxCategory,
 }
 
 impl TaxItem {
-    pub fn as_xml(&self) -> XmlElement {
-        let tax_amount = self.taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
+    pub fn as_xml(&self, taxable_amount: &Decimal) -> XmlElement {
+        let tax_amount = taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
 
         XmlElement::new("TaxItem")
             .with_text_element(
                 "TaxableAmount",
                 &format!(
                     "{:.2}",
-                    self.taxable_amount
-                        .round_dp_with_strategy(2, MidpointAwayFromZero)
+                    taxable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
                 ),
             )
             .with_element(

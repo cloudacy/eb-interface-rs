@@ -93,7 +93,6 @@ mod tests {
                         base_quantity: Some(dec!(1)),
                         reduction_and_surcharge: None,
                         tax_item: TaxItem {
-                            taxable_amount: dec!(1020.00),
                             tax_percent: dec!(20),
                             tax_category: TaxCategory::S,
                         },
@@ -114,7 +113,6 @@ mod tests {
                             surcharge_list_line_items: None,
                         }),
                         tax_item: TaxItem {
-                            taxable_amount: dec!(3.00),
                             tax_percent: dec!(10),
                             tax_category: TaxCategory::AA,
                         },

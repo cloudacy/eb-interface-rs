@@ -67,11 +67,10 @@ impl Invoice<'_> {
             .into_iter()
             .map(|e| {
                 TaxItem {
-                    taxable_amount: e.1,
                     tax_percent: e.0 .0,
                     tax_category: e.0 .1,
                 }
-                .as_xml()
+                .as_xml(&e.1)
             })
             .collect();
 

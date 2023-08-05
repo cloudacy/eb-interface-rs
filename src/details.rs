@@ -67,11 +67,14 @@ impl DetailsItem<'_> {
         }
         e = e.with_element(up);
 
+        let mut reduction_and_surcharge_sum = Decimal::ZERO;
         if let Some(reduction_and_surcharge) = &self.reduction_and_surcharge {
+            reduction_and_surcharge_sum = reduction_and_surcharge.sum();
             e = e.with_element(reduction_and_surcharge.as_xml());
         }
 
-        e = e.with_element(self.tax_item.as_xml());
+        let taxable_amount = self.quantity * self.unit_price + reduction_and_surcharge_sum;
+        e = e.with_element(self.tax_item.as_xml(&taxable_amount));
 
         e = e.with_text_element(
             "LineItemAmount",
@@ -121,7 +124,6 @@ mod tests {
     fn rounds_line_item_amount_result_after_calculation() {
         let quantity = dec!(0.005);
         let unit_price = dec!(0.005);
-        let taxable_amount = quantity * unit_price;
 
         let result = DetailsItem {
             position_number: None,
@@ -132,7 +134,6 @@ mod tests {
             base_quantity: None,
             reduction_and_surcharge: None,
             tax_item: TaxItem {
-                taxable_amount: taxable_amount,
                 tax_percent: dec!(20),
                 tax_category: TaxCategory::S,
             },
@@ -149,7 +150,6 @@ mod tests {
     fn rounds_correctly_up() {
         let quantity = dec!(100.123456);
         let unit_price = dec!(10.20005);
-        let taxable_amount = quantity * unit_price;
 
         let result = DetailsItem {
             position_number: None,
@@ -160,7 +160,6 @@ mod tests {
             base_quantity: None,
             reduction_and_surcharge: None,
             tax_item: TaxItem {
-                taxable_amount: taxable_amount,
                 tax_percent: dec!(20),
                 tax_category: TaxCategory::S,
             },
@@ -191,7 +190,6 @@ mod tests {
                 surcharge_list_line_items: None,
             }),
             tax_item: TaxItem {
-                taxable_amount: dec!(3.00),
                 tax_percent: dec!(10),
                 tax_category: TaxCategory::AA,
             },
@@ -222,7 +220,6 @@ mod tests {
                 )]),
             }),
             tax_item: TaxItem {
-                taxable_amount: dec!(7.00),
                 tax_percent: dec!(10),
                 tax_category: TaxCategory::AA,
             },
@@ -239,7 +236,6 @@ mod tests {
     fn rounds_correctly_down() {
         let quantity = dec!(100.12344);
         let unit_price = dec!(10.20001);
-        let taxable_amount = quantity * unit_price;
 
         let result = DetailsItem {
             position_number: None,
@@ -250,7 +246,6 @@ mod tests {
             base_quantity: None,
             reduction_and_surcharge: None,
             tax_item: TaxItem {
-                taxable_amount: taxable_amount,
                 tax_percent: dec!(20),
                 tax_category: TaxCategory::S,
             },
