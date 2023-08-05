@@ -39,14 +39,17 @@ impl DetailsItem<'_> {
     pub fn as_xml(&self) -> XmlElement {
         let mut e = XmlElement::new("ListLineItem");
 
+        // PositionNumber.
         if let Some(pn) = self.position_number {
             e = e.with_text_element("PositionNumber", &format!("{pn}"));
         }
 
+        // Description(s).
         for description in &self.description {
             e = e.with_text_element("Description", description);
         }
 
+        // Quantity.
         e = e.with_element(
             XmlElement::new("Quantity")
                 .with_attr("Unit", self.unit)
@@ -57,6 +60,7 @@ impl DetailsItem<'_> {
                 )),
         );
 
+        // UnitPrice and BaseQuantity.
         let mut up = XmlElement::new("UnitPrice").with_text(&format!(
             "{:.4}",
             self.unit_price
@@ -67,15 +71,18 @@ impl DetailsItem<'_> {
         }
         e = e.with_element(up);
 
+        // ReductionListLineItem(s) and SurchargeListLineItem(s).
         let mut reduction_and_surcharge_sum = Decimal::ZERO;
         if let Some(reduction_and_surcharge) = &self.reduction_and_surcharge {
             reduction_and_surcharge_sum = reduction_and_surcharge.sum();
             e = e.with_element(reduction_and_surcharge.as_xml());
         }
 
+        // TaxItem.
         let taxable_amount = self.quantity * self.unit_price + reduction_and_surcharge_sum;
         e = e.with_element(self.tax_item.as_xml(&taxable_amount));
 
+        // LineItemAmount.
         e = e.with_text_element(
             "LineItemAmount",
             &format!(
