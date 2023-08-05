@@ -8,9 +8,10 @@
 
 ## Notes
 
-- rounding
-  - `eb-interface-rs` rounds after all calculations are done
-  - `eb-interface-rs` uses the [`MidpointAwayFromZero`](https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html#variant.MidpointAwayFromZero) rounding strategy
+#### rounding
+
+- `eb-interface-rs` rounds after all calculations are done
+- `eb-interface-rs` uses the [`MidpointAwayFromZero`](https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html#variant.MidpointAwayFromZero) rounding strategy
 
 ## Feature set
 
