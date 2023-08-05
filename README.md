@@ -12,6 +12,10 @@
   - `eb-interface-rs` rounds after all calculations are done
   - `eb-interface-rs` uses the [`MidpointAwayFromZero`](https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html#variant.MidpointAwayFromZero) rounding strategy
 
+## Feature set
+
+- [x] minimal invoice
+
 ## Example
 
 ```rust
@@ -74,10 +78,6 @@ Invoice::new(
 )
 .as_xml_str(); // returns "<Invoice>...</Invoice>"
 ```
-
-## Feature set
-
-- [x] minimal invoice
 
 ## Development
 
