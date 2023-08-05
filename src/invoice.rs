@@ -46,7 +46,7 @@ impl Invoice<'_> {
         }
     }
 
-    pub fn as_xml(&self) -> String {
+    pub fn as_xml_str(&self) -> String {
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {

@@ -120,7 +120,7 @@ mod tests {
                 ],
             },
         )
-        .as_xml();
+        .as_xml_str();
 
         assert_eq!(
             result,
