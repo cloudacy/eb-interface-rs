@@ -7,6 +7,7 @@ pub mod identification;
 pub mod invoice;
 pub mod invoice_recipient;
 pub mod order_reference;
+pub mod reduction_and_surcharge;
 pub mod tax;
 pub mod xml;
 
@@ -23,89 +24,10 @@ mod tests {
     use invoice::Invoice;
     use invoice_recipient::InvoiceRecipient;
     use order_reference::OrderReference;
+    use reduction_and_surcharge::{
+        ReductionAndSurchargeListLineItemDetails, ReductionAndSurchargeValue, ReductionListLineItem,
+    };
     use tax::{TaxCategory, TaxItem};
-    use xml::XmlAsString;
-
-    #[test]
-    fn round_line_item_amount_result_after_calculation() {
-        let quantity = dec!(0.005);
-        let unit_price = dec!(0.005);
-        let taxable_amount = quantity * unit_price;
-
-        let result = DetailsItem {
-            position_number: None,
-            description: vec!["Sand"],
-            quantity: quantity,
-            unit: "KGM",
-            unit_price: unit_price,
-            base_quantity: None,
-            tax_item: TaxItem {
-                taxable_amount: taxable_amount,
-                tax_percent: dec!(20),
-                tax_category: TaxCategory::S,
-            },
-        }
-        .as_xml();
-
-        assert_eq!(
-            result.as_str(),
-            "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">0.0050</Quantity><UnitPrice>0.0050</UnitPrice><TaxItem><TaxableAmount>0.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>0.00</TaxAmount></TaxItem><LineItemAmount>0.00</LineItemAmount></ListLineItem>"
-        );
-    }
-
-    #[test]
-    fn rounds_correctly_up() {
-        let quantity = dec!(100.123456);
-        let unit_price = dec!(10.20005);
-        let taxable_amount = quantity * unit_price;
-
-        let result = DetailsItem {
-            position_number: None,
-            description: vec!["Sand"],
-            quantity: quantity,
-            unit: "KGM",
-            unit_price: unit_price,
-            base_quantity: None,
-            tax_item: TaxItem {
-                taxable_amount: taxable_amount,
-                tax_percent: dec!(20),
-                tax_category: TaxCategory::S,
-            },
-        }
-        .as_xml();
-
-        assert_eq!(
-            result.as_str(),
-            "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1235</Quantity><UnitPrice>10.2001</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
-        );
-    }
-
-    #[test]
-    fn rounds_correctly_down() {
-        let quantity = dec!(100.12344);
-        let unit_price = dec!(10.20001);
-        let taxable_amount = quantity * unit_price;
-
-        let result = DetailsItem {
-            position_number: None,
-            description: vec!["Sand"],
-            quantity: quantity,
-            unit: "KGM",
-            unit_price: unit_price,
-            base_quantity: None,
-            tax_item: TaxItem {
-                taxable_amount: taxable_amount,
-                tax_percent: dec!(20),
-                tax_category: TaxCategory::S,
-            },
-        }
-        .as_xml();
-
-        assert_eq!(
-            result.as_str(),
-            "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1234</Quantity><UnitPrice>10.2000</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
-        );
-    }
 
     #[test]
     fn it_works() {
@@ -169,6 +91,7 @@ mod tests {
                         unit: "STK",
                         unit_price: dec!(10.20),
                         base_quantity: Some(dec!(1)),
+                        reduction_and_surcharge: None,
                         tax_item: TaxItem {
                             taxable_amount: dec!(1020.00),
                             tax_percent: dec!(20),
@@ -182,8 +105,16 @@ mod tests {
                         unit: "STK",
                         unit_price: dec!(5.00),
                         base_quantity: Some(dec!(1)),
+                        reduction_and_surcharge: Some(ReductionAndSurchargeListLineItemDetails {
+                            reduction_list_line_items: Some(vec![ReductionListLineItem::new(
+                                dec!(5),
+                                ReductionAndSurchargeValue::Amount(dec!(2)),
+                                Some("reduction"),
+                            )]),
+                            surcharge_list_line_items: None,
+                        }),
                         tax_item: TaxItem {
-                            taxable_amount: dec!(5.00),
+                            taxable_amount: dec!(3.00),
                             tax_percent: dec!(10),
                             tax_category: TaxCategory::AA,
                         },
@@ -195,7 +126,7 @@ mod tests {
 
         assert_eq!(
             result,
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><OrderReference><OrderID>test</OrderID></OrderReference><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address><Contact><Name>Max Mustermann</Name><Email>schrauben@mustermann.at</Email></Contact></InvoiceRecipient><Details><ItemList><ListLineItem><PositionNumber>1</PositionNumber><Description>Schraubenzieher</Description><Quantity Unit=\"STK\">100.0000</Quantity><UnitPrice BaseQuantity=\"1\">10.2000</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><PositionNumber>2</PositionNumber><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice BaseQuantity=\"1\">5.0000</UnitPrice><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><LineItemAmount>5.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>5.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.50</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1229.50</TotalGrossAmount><PayableAmount>1229.50</PayableAmount></Invoice>"
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber><FurtherIdentification IdentificationType=\"DVR\">0012345</FurtherIdentification><Address><Name>Schrauben Mustermann</Name><Street>Lassallenstraße 5</Street><Town>Wien</Town><ZIP>1020</ZIP><Country CountryCode=\"AT\">Österreich</Country><Phone>+43 / 1 / 78 56 789</Phone><Email>schrauben@mustermann.at</Email></Address></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber><OrderReference><OrderID>test</OrderID></OrderReference><Address><Name>Mustermann GmbH</Name><Street>Hauptstraße 10</Street><Town>Graz</Town><ZIP>8010</ZIP><Country CountryCode=\"AT\">Österreich</Country></Address><Contact><Name>Max Mustermann</Name><Email>schrauben@mustermann.at</Email></Contact></InvoiceRecipient><Details><ItemList><ListLineItem><PositionNumber>1</PositionNumber><Description>Schraubenzieher</Description><Quantity Unit=\"STK\">100.0000</Quantity><UnitPrice BaseQuantity=\"1\">10.2000</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem><ListLineItem><PositionNumber>2</PositionNumber><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice BaseQuantity=\"1\">5.0000</UnitPrice><ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>5.00</BaseAmount><Amount>2.00</Amount><Comment>reduction</Comment></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails><TaxItem><TaxableAmount>3.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.30</TaxAmount></TaxItem><LineItemAmount>3.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>3.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.30</TaxAmount></TaxItem><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1227.30</TotalGrossAmount><PayableAmount>1227.30</PayableAmount></Invoice>"
         );
     }
 }
