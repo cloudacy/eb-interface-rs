@@ -1,4 +1,4 @@
-fn xml_escape(s: String) -> String {
+fn xml_escape(s: &str) -> String {
     s.replace("&", "&amp;")
         .replace("\"", "&quot;")
         .replace("'", "&apos;")
@@ -16,7 +16,7 @@ struct XmlText {
 
 impl XmlAsString for XmlText {
     fn as_str(&self) -> String {
-        xml_escape(self.text.to_owned())
+        xml_escape(&self.text)
     }
 }
 
@@ -27,11 +27,7 @@ struct XmlAttribute {
 
 impl XmlAsString for XmlAttribute {
     fn as_str(&self) -> String {
-        format!(
-            "{}=\"{}\"",
-            xml_escape(self.name.to_owned()),
-            xml_escape(self.value.to_owned())
-        )
+        format!("{}=\"{}\"", xml_escape(&self.name), xml_escape(&self.value))
     }
 }
 
@@ -42,7 +38,7 @@ pub struct XmlElement {
 }
 
 impl XmlElement {
-    pub fn new(name: &str) -> XmlElement {
+    pub fn new(name: &str) -> Self {
         XmlElement {
             name: name.to_owned(),
             attrs: None,
@@ -50,7 +46,7 @@ impl XmlElement {
         }
     }
 
-    pub fn with_attr(mut self, name: &str, value: &str) -> XmlElement {
+    pub fn with_attr(mut self, name: &str, value: &str) -> Self {
         let attr = XmlAttribute {
             name: name.to_owned(),
             value: value.to_owned(),
@@ -64,13 +60,13 @@ impl XmlElement {
         self
     }
 
-    pub fn with_element(mut self, element: impl XmlAsString + 'static) -> XmlElement {
+    pub fn with_element(mut self, element: impl XmlAsString + 'static) -> Self {
         self.body.push(Box::new(element));
 
         self
     }
 
-    pub fn with_text_element(mut self, name: &str, text: &str) -> XmlElement {
+    pub fn with_text_element(mut self, name: &str, text: &str) -> Self {
         self.body.push(Box::new(XmlElement {
             name: name.to_owned(),
             attrs: None,
@@ -82,7 +78,7 @@ impl XmlElement {
         self
     }
 
-    pub fn with_text(mut self, text: &str) -> XmlElement {
+    pub fn with_text(mut self, text: &str) -> Self {
         self.body.push(Box::new(XmlText {
             text: text.to_owned(),
         }));
@@ -93,7 +89,7 @@ impl XmlElement {
 
 impl XmlAsString for XmlElement {
     fn as_str(&self) -> String {
-        let name = xml_escape(self.name.to_owned());
+        let name = xml_escape(&self.name);
         let mut attrs: String = match &self.attrs {
             Some(attrs) => {
                 if attrs.len() < 1 {
@@ -123,14 +119,14 @@ mod tests {
 
     #[test]
     fn escapes_xml() {
-        assert_eq!(xml_escape("&".to_owned()), "&amp;");
-        assert_eq!(xml_escape("\"".to_owned()), "&quot;");
-        assert_eq!(xml_escape("'".to_owned()), "&apos;");
-        assert_eq!(xml_escape("<".to_owned()), "&lt;");
-        assert_eq!(xml_escape(">".to_owned()), "&gt;");
-        assert_eq!(xml_escape("&\"".to_owned()), "&amp;&quot;");
+        assert_eq!(xml_escape("&"), "&amp;");
+        assert_eq!(xml_escape("\""), "&quot;");
+        assert_eq!(xml_escape("'"), "&apos;");
+        assert_eq!(xml_escape("<"), "&lt;");
+        assert_eq!(xml_escape(">"), "&gt;");
+        assert_eq!(xml_escape("&\""), "&amp;&quot;");
         assert_eq!(
-            xml_escape("<test foo=\"bar\">baz</test>".to_owned()),
+            xml_escape("<test foo=\"bar\">baz</test>"),
             "&lt;test foo=&quot;bar&quot;&gt;baz&lt;/test&gt;"
         );
     }
