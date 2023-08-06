@@ -31,20 +31,19 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = Invoice::new(
-            "test",
-            "EUR",
-            "An invoice",
-            "de",
-            "993433000298",
-            "2020-01-01",
-            Biller {
+        let result = Invoice {
+            generating_system: "test",
+            invoice_currency: "EUR",
+            document_title: "An invoice",
+            language: "de",
+            invoice_number: "993433000298",
+            invoice_date: "2020-01-01",
+            biller: Biller {
                 vat_identification_number: "ATU51507409",
                 further_identification: Some(vec![FurtherIdentification {
                     id: "0012345",
                     id_type: FurtherIdentificationType::DVR,
                 }]),
-                order_reference: None,
                 address: Some(Address {
                     name: "Schrauben Mustermann",
                     street: Some("Lassallenstraße 5"),
@@ -55,15 +54,13 @@ mod tests {
                     phone: Some(vec!["+43 / 1 / 78 56 789"]),
                     email: Some(vec!["schrauben@mustermann.at"]),
                 }),
-                contact: None,
+                ..Default::default()
             },
-            InvoiceRecipient {
+            invoice_recipient: InvoiceRecipient {
                 vat_identification_number: "ATU18708634",
-                further_identification: None,
                 order_reference: Some(OrderReference {
                     order_id: "test",
-                    reference_date: None,
-                    description: None,
+                    ..Default::default()
                 }),
                 address: Some(Address {
                     name: "Mustermann GmbH",
@@ -72,17 +69,16 @@ mod tests {
                     zip: "8010",
                     country: "Österreich",
                     country_code: Some("AT"),
-                    phone: None,
-                    email: None,
+                    ..Default::default()
                 }),
                 contact: Some(Contact {
-                    salutation: None,
                     name: "Max Mustermann",
-                    phone: None,
                     email: Some(vec!["schrauben@mustermann.at"]),
+                    ..Default::default()
                 }),
+                ..Default::default()
             },
-            Details {
+            details: Details {
                 items: vec![
                     DetailsItem {
                         position_number: Some(1),
@@ -91,11 +87,11 @@ mod tests {
                         unit: "STK",
                         unit_price: dec!(10.20),
                         base_quantity: Some(dec!(1)),
-                        reduction_and_surcharge: None,
                         tax_item: TaxItem {
                             tax_percent: dec!(20),
                             tax_category: TaxCategory::S,
                         },
+                        ..Default::default()
                     },
                     DetailsItem {
                         position_number: Some(2),
@@ -110,7 +106,7 @@ mod tests {
                                 ReductionAndSurchargeValue::Amount(dec!(2)),
                                 Some("reduction"),
                             )]),
-                            surcharge_list_line_items: None,
+                            ..Default::default()
                         }),
                         tax_item: TaxItem {
                             tax_percent: dec!(10),
@@ -119,7 +115,8 @@ mod tests {
                     },
                 ],
             },
-        )
+            ..Default::default()
+        }
         .as_xml_str();
 
         assert_eq!(

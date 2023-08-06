@@ -9,43 +9,20 @@ use crate::{
     xml::{XmlAsString, XmlElement},
 };
 
+#[derive(Default)]
 pub struct Invoice<'a> {
-    generating_system: &'a str,
-    invoice_currency: &'a str,
-    document_title: &'a str,
-    language: &'a str,
-    invoice_number: &'a str,
-    invoice_date: &'a str,
-    biller: Biller<'a>,
-    invoice_recipient: InvoiceRecipient<'a>,
-    details: Details<'a>,
+    pub generating_system: &'a str,
+    pub invoice_currency: &'a str,
+    pub document_title: &'a str,
+    pub language: &'a str,
+    pub invoice_number: &'a str,
+    pub invoice_date: &'a str,
+    pub biller: Biller<'a>,
+    pub invoice_recipient: InvoiceRecipient<'a>,
+    pub details: Details<'a>,
 }
 
 impl Invoice<'_> {
-    pub fn new<'a>(
-        generating_system: &'a str,
-        invoice_currency: &'a str,
-        document_title: &'a str,
-        language: &'a str,
-        invoice_number: &'a str,
-        invoice_date: &'a str,
-        biller: Biller<'a>,
-        invoice_recipient: InvoiceRecipient<'a>,
-        details: Details<'a>,
-    ) -> Invoice<'a> {
-        Invoice {
-            generating_system,
-            invoice_currency,
-            document_title,
-            language,
-            invoice_number,
-            invoice_date,
-            biller,
-            invoice_recipient,
-            details,
-        }
-    }
-
     pub fn as_xml_str(&self) -> String {
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();

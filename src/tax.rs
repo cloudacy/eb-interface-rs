@@ -1,8 +1,9 @@
 use crate::xml::XmlElement;
 use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
 
-#[derive(Eq, PartialEq, Hash, Ord, PartialOrd, Clone)]
+#[derive(Eq, PartialEq, Hash, Ord, PartialOrd, Clone, Default)]
 pub enum TaxCategory {
+    #[default]
     S,
     AA,
     O,
@@ -36,6 +37,7 @@ impl TaxCategory {
     }
 }
 
+#[derive(Default)]
 pub struct TaxItem {
     pub tax_percent: Decimal,
     pub tax_category: TaxCategory,

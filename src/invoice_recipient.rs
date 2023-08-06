@@ -3,6 +3,7 @@ use crate::{
     order_reference::OrderReference, xml::XmlElement,
 };
 
+#[derive(Default)]
 pub struct InvoiceRecipient<'a> {
     pub vat_identification_number: &'a str,
     pub further_identification: Option<Vec<FurtherIdentification<'a>>>,

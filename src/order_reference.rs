@@ -1,5 +1,6 @@
 use crate::xml::XmlElement;
 
+#[derive(Default)]
 pub struct OrderReference<'a> {
     pub order_id: &'a str,
     pub reference_date: Option<&'a str>,

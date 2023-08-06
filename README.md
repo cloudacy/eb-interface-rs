@@ -20,45 +20,38 @@
 ## Example
 
 ```rust
-Invoice::new(
-    "generating system",
-    "EUR", // currency
-    "document title",
-    "de", // language
-    "993433000298", // invoice number
-    "2020-01-01", // invoice date
-    Biller {
+Invoice {
+    generating_system: "test",
+    invoice_currency: "EUR",
+    document_title: "An invoice",
+    language: "de",
+    invoice_number: "993433000298",
+    invoice_date: "2020-01-01",
+    biller: Biller {
         vat_identification_number: "ATU51507409",
-        further_identification: None,
-        order_reference: None,
-        address: None,
-        contact: None,
+        ..Default::default()
     },
-    InvoiceRecipient {
+    invoice_recipient: InvoiceRecipient {
         vat_identification_number: "ATU18708634",
-        further_identification: None,
-        order_reference: None,
-        address: None,
-        contact: None,
+        ..Default::default()
     },
-    Details {
+    details: Details {
         items: vec![
             DetailsItem {
-                position_number: None,
                 description: vec!["Schraubenzieher"],
                 quantity: dec!(100),
                 unit: "STK",
                 unit_price: dec!(10.20),
-                base_quantity: None,
-                reduction_and_surcharge: None,
                 tax_item: TaxItem {
                     tax_percent: dec!(20),
                     tax_category: TaxCategory::S,
                 },
+                ..Default::default()
             },
         ],
     },
-)
+    ..Default::default()
+}
 .as_xml_str(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
 ```
 

@@ -133,6 +133,7 @@ impl SurchargeListLineItem<'_> {
     }
 }
 
+#[derive(Default)]
 pub struct ReductionAndSurchargeListLineItemDetails<'a> {
     pub reduction_list_line_items: Option<Vec<ReductionListLineItem<'a>>>,
     pub surcharge_list_line_items: Option<Vec<SurchargeListLineItem<'a>>>,
@@ -223,7 +224,7 @@ mod tests {
                 ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3)),
                 Some("reduction"),
             )]),
-            surcharge_list_line_items: None,
+            ..Default::default()
         }
         .as_xml();
 

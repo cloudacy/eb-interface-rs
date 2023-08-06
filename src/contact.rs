@@ -1,5 +1,6 @@
 use crate::xml::XmlElement;
 
+#[derive(Default)]
 pub struct Contact<'a> {
     pub salutation: Option<&'a str>,
     pub name: &'a str,

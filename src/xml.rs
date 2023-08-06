@@ -31,6 +31,7 @@ impl XmlAsString for XmlAttribute {
     }
 }
 
+#[derive(Default)]
 pub struct XmlElement {
     name: String,
     attrs: Option<Vec<XmlAttribute>>,
@@ -41,8 +42,7 @@ impl XmlElement {
     pub fn new(name: &str) -> Self {
         XmlElement {
             name: name.to_owned(),
-            attrs: None,
-            body: vec![],
+            ..Default::default()
         }
     }
 
@@ -69,10 +69,10 @@ impl XmlElement {
     pub fn with_text_element(mut self, name: &str, text: &str) -> Self {
         self.body.push(Box::new(XmlElement {
             name: name.to_owned(),
-            attrs: None,
             body: vec![Box::new(XmlText {
                 text: text.to_owned(),
             })],
+            ..Default::default()
         }));
 
         self

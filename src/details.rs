@@ -4,6 +4,7 @@ use crate::{
 };
 use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
 
+#[derive(Default)]
 pub struct DetailsItem<'a> {
     pub position_number: Option<u64>,
     pub description: Vec<&'a str>,
@@ -96,6 +97,7 @@ impl DetailsItem<'_> {
     }
 }
 
+#[derive(Default)]
 pub struct Details<'a> {
     pub items: Vec<DetailsItem<'a>>,
 }
@@ -133,17 +135,15 @@ mod tests {
         let unit_price = dec!(0.005);
 
         let result = DetailsItem {
-            position_number: None,
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
             unit_price: unit_price,
-            base_quantity: None,
-            reduction_and_surcharge: None,
             tax_item: TaxItem {
                 tax_percent: dec!(20),
                 tax_category: TaxCategory::S,
             },
+            ..Default::default()
         }
         .as_xml();
 
@@ -159,17 +159,15 @@ mod tests {
         let unit_price = dec!(10.20005);
 
         let result = DetailsItem {
-            position_number: None,
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
             unit_price: unit_price,
-            base_quantity: None,
-            reduction_and_surcharge: None,
             tax_item: TaxItem {
                 tax_percent: dec!(20),
                 tax_category: TaxCategory::S,
             },
+            ..Default::default()
         }
         .as_xml();
 
@@ -182,24 +180,23 @@ mod tests {
     #[test]
     fn calculates_reduction_correctly() {
         let result = DetailsItem {
-            position_number: None,
             description: vec!["Handbuch zur Schraube"],
             quantity: dec!(1),
             unit: "STK",
             unit_price: dec!(5.00),
-            base_quantity: None,
             reduction_and_surcharge: Some(ReductionAndSurchargeListLineItemDetails {
                 reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                     dec!(5),
                     ReductionAndSurchargeValue::Amount(dec!(2)),
                     None,
                 )]),
-                surcharge_list_line_items: None,
+                ..Default::default()
             }),
             tax_item: TaxItem {
                 tax_percent: dec!(10),
                 tax_category: TaxCategory::AA,
             },
+            ..Default::default()
         }
         .as_xml();
 
@@ -212,24 +209,23 @@ mod tests {
     #[test]
     fn calculates_surcharge_correctly() {
         let result = DetailsItem {
-            position_number: None,
             description: vec!["Handbuch zur Schraube"],
             quantity: dec!(1),
             unit: "STK",
             unit_price: dec!(5.00),
-            base_quantity: None,
             reduction_and_surcharge: Some(ReductionAndSurchargeListLineItemDetails {
-                reduction_list_line_items: None,
                 surcharge_list_line_items: Some(vec![SurchargeListLineItem::new(
                     dec!(5),
                     ReductionAndSurchargeValue::Amount(dec!(2)),
                     None,
                 )]),
+                ..Default::default()
             }),
             tax_item: TaxItem {
                 tax_percent: dec!(10),
                 tax_category: TaxCategory::AA,
             },
+            ..Default::default()
         }
         .as_xml();
 
@@ -245,17 +241,15 @@ mod tests {
         let unit_price = dec!(10.20001);
 
         let result = DetailsItem {
-            position_number: None,
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
             unit_price: unit_price,
-            base_quantity: None,
-            reduction_and_surcharge: None,
             tax_item: TaxItem {
                 tax_percent: dec!(20),
                 tax_category: TaxCategory::S,
             },
+            ..Default::default()
         }
         .as_xml();
 
