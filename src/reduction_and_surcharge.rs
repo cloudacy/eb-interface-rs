@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn generates_reduction_and_surcharge_list_line_item() {
-        let reduction_and_surcharge = ReductionAndSurchargeListLineItemDetails {
+        let result = ReductionAndSurchargeListLineItemDetails {
             reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                 dec!(100),
                 ReductionAndSurchargeValue::Percentage(dec!(2)),
@@ -188,15 +188,16 @@ mod tests {
                 ReductionAndSurchargeValue::Amount(dec!(3)),
                 Some("surcharge"),
             )]),
-        };
-        let result = reduction_and_surcharge.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Percentage>2.00</Percentage><Comment>reduction</Comment></ReductionListLineItem><SurchargeListLineItem><BaseAmount>200.00</BaseAmount><Amount>3.00</Amount><Comment>surcharge</Comment></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
 
-        let reduction_and_surcharge = ReductionAndSurchargeListLineItemDetails {
+        let result = ReductionAndSurchargeListLineItemDetails {
             reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                 dec!(100),
                 ReductionAndSurchargeValue::Amount(dec!(2)),
@@ -207,26 +208,28 @@ mod tests {
                 ReductionAndSurchargeValue::Percentage(dec!(3)),
                 Some("surcharge"),
             )]),
-        };
-        let result = reduction_and_surcharge.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Amount>2.00</Amount><Comment>reduction</Comment></ReductionListLineItem><SurchargeListLineItem><BaseAmount>200.00</BaseAmount><Percentage>3.00</Percentage><Comment>surcharge</Comment></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
 
-        let reduction_and_surcharge = ReductionAndSurchargeListLineItemDetails {
+        let result = ReductionAndSurchargeListLineItemDetails {
             reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                 dec!(100),
                 ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3)),
                 Some("reduction"),
             )]),
             ..Default::default()
-        };
-        let result = reduction_and_surcharge.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Percentage>2.00</Percentage><Amount>3.00</Amount><Comment>reduction</Comment></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
     }

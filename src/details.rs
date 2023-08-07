@@ -124,7 +124,7 @@ mod tests {
         let quantity = dec!(0.005);
         let unit_price = dec!(0.005);
 
-        let item: DetailsItem<'_> = DetailsItem {
+        let result = DetailsItem {
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
@@ -134,11 +134,12 @@ mod tests {
                 tax_category: TaxCategory::S,
             },
             ..Default::default()
-        };
-        let result = item.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">0.0050</Quantity><UnitPrice>0.0050</UnitPrice><TaxItem><TaxableAmount>0.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>0.00</TaxAmount></TaxItem><LineItemAmount>0.00</LineItemAmount></ListLineItem>"
         );
     }
@@ -148,7 +149,7 @@ mod tests {
         let quantity = dec!(100.123456);
         let unit_price = dec!(10.20005);
 
-        let item = DetailsItem {
+        let result = DetailsItem {
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
@@ -158,18 +159,19 @@ mod tests {
                 tax_category: TaxCategory::S,
             },
             ..Default::default()
-        };
-        let result = item.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ListLineItem><Description>Sand</Description><Quantity Unit=\"KGM\">100.1235</Quantity><UnitPrice>10.2001</UnitPrice><TaxItem><TaxableAmount>1021.26</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.25</TaxAmount></TaxItem><LineItemAmount>1021.26</LineItemAmount></ListLineItem>"
         );
     }
 
     #[test]
     fn calculates_reduction_correctly() {
-        let item = DetailsItem {
+        let result = DetailsItem {
             description: vec!["Handbuch zur Schraube"],
             quantity: dec!(1),
             unit: "STK",
@@ -187,18 +189,19 @@ mod tests {
                 tax_category: TaxCategory::AA,
             },
             ..Default::default()
-        };
-        let result = item.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice>5.0000</UnitPrice><ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>5.00</BaseAmount><Amount>2.00</Amount></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails><TaxItem><TaxableAmount>3.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.30</TaxAmount></TaxItem><LineItemAmount>3.00</LineItemAmount></ListLineItem>"
         );
     }
 
     #[test]
     fn calculates_surcharge_correctly() {
-        let item = DetailsItem {
+        let result = DetailsItem {
             description: vec!["Handbuch zur Schraube"],
             quantity: dec!(1),
             unit: "STK",
@@ -216,11 +219,12 @@ mod tests {
                 tax_category: TaxCategory::AA,
             },
             ..Default::default()
-        };
-        let result = item.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
-            result.as_str(),
+            result,
             "<ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice>5.0000</UnitPrice><ReductionAndSurchargeListLineItemDetails><SurchargeListLineItem><BaseAmount>5.00</BaseAmount><Amount>2.00</Amount></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails><TaxItem><TaxableAmount>7.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.70</TaxAmount></TaxItem><LineItemAmount>7.00</LineItemAmount></ListLineItem>"
         );
     }
@@ -230,7 +234,7 @@ mod tests {
         let quantity = dec!(100.12344);
         let unit_price = dec!(10.20001);
 
-        let item = DetailsItem {
+        let result = DetailsItem {
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
@@ -240,8 +244,9 @@ mod tests {
                 tax_category: TaxCategory::S,
             },
             ..Default::default()
-        };
-        let result = item.as_xml();
+        }
+        .as_xml()
+        .as_str();
 
         assert_eq!(
             result.as_str(),
