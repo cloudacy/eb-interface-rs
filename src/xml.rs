@@ -1,10 +1,28 @@
-fn xml_escape(s: impl AsRef<str>) -> String {
-    s.as_ref()
-        .replace("&", "&amp;")
-        .replace("\"", "&quot;")
-        .replace("'", "&apos;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    static ref XML_ESCAPE_REGEX: Regex = Regex::new("[&\"'<>]").unwrap();
+}
+
+fn xml_escape<'a>(s: impl AsRef<str>) -> String {
+    let r = s.as_ref();
+    if let Some(m) = XML_ESCAPE_REGEX.find(r) {
+        let mut o = r[0..m.start()].to_string();
+        for c in (&r[m.start()..]).chars() {
+            match c {
+                '&' => o.push_str("&amp;"),
+                '"' => o.push_str("&quot;"),
+                '\'' => o.push_str("&apos;"),
+                '<' => o.push_str("&lt;"),
+                '>' => o.push_str("&gt;"),
+                _ => o.push(c),
+            }
+        }
+        o
+    } else {
+        r.to_string()
+    }
 }
 
 pub trait XmlAsString {
@@ -138,6 +156,7 @@ mod tests {
         assert_eq!(xml_escape("<"), "&lt;");
         assert_eq!(xml_escape(">"), "&gt;");
         assert_eq!(xml_escape("&\""), "&amp;&quot;");
+        assert_eq!(xml_escape("&ü\""), "&amp;ü&quot;");
         assert_eq!(
             xml_escape("<test foo=\"bar\">baz</test>"),
             "&lt;test foo=&quot;bar&quot;&gt;baz&lt;/test&gt;"

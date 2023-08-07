@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 rust_decimal = { version = "~1", default-features = false, features = [] }
+regex = { version = "~1", default-features = false, features = [] }
+lazy_static = { version = "~1", default-features = false, features = [] }
 
 [dev-dependencies]
 rust_decimal_macros = { version = "~1", default-features = false, features = [] }
