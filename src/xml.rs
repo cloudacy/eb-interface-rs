@@ -25,16 +25,16 @@ fn xml_escape<'a>(s: impl AsRef<str>) -> String {
     }
 }
 
-pub trait XmlAsString {
-    fn as_str(&self) -> String;
+pub trait XmlToString {
+    fn to_string(&self) -> String;
 }
 
 struct XmlText<'a> {
     text: Box<dyn AsRef<str> + 'a>,
 }
 
-impl<'a> XmlAsString for XmlText<'a> {
-    fn as_str(&self) -> String {
+impl<'a> XmlToString for XmlText<'a> {
+    fn to_string(&self) -> String {
         xml_escape(self.text.as_ref())
     }
 }
@@ -44,8 +44,8 @@ struct XmlAttribute<'a> {
     value: Box<dyn AsRef<str> + 'a>,
 }
 
-impl XmlAsString for XmlAttribute<'_> {
-    fn as_str(&self) -> String {
+impl XmlToString for XmlAttribute<'_> {
+    fn to_string(&self) -> String {
         format!(
             "{}=\"{}\"",
             xml_escape(self.name.as_ref()),
@@ -58,7 +58,7 @@ impl XmlAsString for XmlAttribute<'_> {
 pub struct XmlElement<'a> {
     name: &'a str,
     attrs: Option<Vec<XmlAttribute<'a>>>,
-    body: Vec<Box<dyn XmlAsString + 'a>>,
+    body: Vec<Box<dyn XmlToString + 'a>>,
 }
 
 impl<'a> XmlElement<'a> {
@@ -83,7 +83,7 @@ impl<'a> XmlElement<'a> {
         self
     }
 
-    pub fn with_element(mut self, element: impl XmlAsString + 'a) -> Self {
+    pub fn with_element(mut self, element: impl XmlToString + 'a) -> Self {
         self.body.push(Box::new(element));
 
         self
@@ -118,8 +118,8 @@ impl<'a> XmlElement<'a> {
     }
 }
 
-impl<'a> XmlAsString for XmlElement<'a> {
-    fn as_str(&self) -> String {
+impl<'a> XmlToString for XmlElement<'a> {
+    fn to_string(&self) -> String {
         let name = xml_escape(&self.name);
         let mut attrs: String = match &self.attrs {
             Some(attrs) => {
@@ -127,13 +127,13 @@ impl<'a> XmlAsString for XmlElement<'a> {
                     return "".to_string();
                 }
 
-                let attr_str_vec: Vec<String> = attrs.into_iter().map(|a| a.as_str()).collect();
+                let attr_str_vec: Vec<String> = attrs.into_iter().map(|a| a.to_string()).collect();
                 attr_str_vec.join(" ")
             }
             None => "".to_string(),
         };
 
-        let body_str_vec: Vec<String> = (&self.body).into_iter().map(|e| e.as_str()).collect();
+        let body_str_vec: Vec<String> = (&self.body).into_iter().map(|e| e.to_string()).collect();
         let body = body_str_vec.join("");
 
         if attrs.len() > 0 {
@@ -169,14 +169,14 @@ mod tests {
             XmlElement::new("test")
                 .with_attr("foo", "bar")
                 .with_text("baz")
-                .as_str(),
+                .to_string(),
             "<test foo=\"bar\">baz</test>"
         );
         assert_eq!(
             XmlElement::new("a")
                 .with_attr("foo", "bar")
                 .with_element(XmlElement::new("b").with_attr("c", "d&e"))
-                .as_str(),
+                .to_string(),
             "<a foo=\"bar\"><b c=\"d&amp;e\"></b></a>"
         );
     }

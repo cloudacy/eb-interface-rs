@@ -52,7 +52,7 @@ Invoice {
     },
     ..Default::default()
 }
-.as_xml_str(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
+.to_xml_string(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
 ```
 
 ## Development

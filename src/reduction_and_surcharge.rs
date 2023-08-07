@@ -173,7 +173,7 @@ mod tests {
     use super::*;
     use rust_decimal_macros::dec;
 
-    use crate::xml::XmlAsString;
+    use crate::xml::XmlToString;
 
     #[test]
     fn generates_reduction_and_surcharge_list_line_item() {
@@ -190,7 +190,7 @@ mod tests {
             )]),
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,
@@ -210,7 +210,7 @@ mod tests {
             )]),
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,
@@ -226,7 +226,7 @@ mod tests {
             ..Default::default()
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,

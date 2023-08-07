@@ -116,7 +116,7 @@ mod tests {
             ReductionAndSurchargeValue, ReductionListLineItem, SurchargeListLineItem,
         },
         tax::TaxCategory,
-        xml::XmlAsString,
+        xml::XmlToString,
     };
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
             ..Default::default()
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,
@@ -161,7 +161,7 @@ mod tests {
             ..Default::default()
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,
@@ -191,7 +191,7 @@ mod tests {
             ..Default::default()
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,
@@ -221,7 +221,7 @@ mod tests {
             ..Default::default()
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result,
@@ -246,7 +246,7 @@ mod tests {
             ..Default::default()
         }
         .as_xml()
-        .as_str();
+        .to_string();
 
         assert_eq!(
             result.as_str(),

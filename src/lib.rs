@@ -118,7 +118,7 @@ mod tests {
             },
             ..Default::default()
         }
-        .as_xml_str();
+        .to_xml_string();
 
         assert_eq!(
             result,

@@ -7,7 +7,7 @@ use crate::{
     details::Details,
     invoice_recipient::InvoiceRecipient,
     tax::{TaxCategory, TaxItem},
-    xml::{XmlAsString, XmlElement},
+    xml::{XmlElement, XmlToString},
 };
 
 #[derive(Default)]
@@ -24,7 +24,7 @@ pub struct Invoice<'a> {
 }
 
 impl Invoice<'_> {
-    pub fn as_xml_str(&self) -> String {
+    pub fn to_xml_string(&self) -> String {
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {
@@ -84,7 +84,7 @@ impl Invoice<'_> {
 
         format!(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>{}",
-            invoice.as_str()
+            invoice.to_string()
         )
     }
 }
