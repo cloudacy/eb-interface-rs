@@ -1,5 +1,6 @@
-fn xml_escape(s: &str) -> String {
-    s.replace("&", "&amp;")
+fn xml_escape(s: impl AsRef<str>) -> String {
+    s.as_ref()
+        .replace("&", "&amp;")
         .replace("\"", "&quot;")
         .replace("'", "&apos;")
         .replace("<", "&lt;")
@@ -10,46 +11,50 @@ pub trait XmlAsString {
     fn as_str(&self) -> String;
 }
 
-struct XmlText {
-    text: String,
+struct XmlText<'a> {
+    text: Box<dyn AsRef<str> + 'a>,
 }
 
-impl XmlAsString for XmlText {
+impl<'a> XmlAsString for XmlText<'a> {
     fn as_str(&self) -> String {
-        xml_escape(&self.text)
+        xml_escape(self.text.as_ref())
     }
 }
 
-struct XmlAttribute {
-    name: String,
-    value: String,
+struct XmlAttribute<'a> {
+    name: Box<dyn AsRef<str> + 'a>,
+    value: Box<dyn AsRef<str> + 'a>,
 }
 
-impl XmlAsString for XmlAttribute {
+impl XmlAsString for XmlAttribute<'_> {
     fn as_str(&self) -> String {
-        format!("{}=\"{}\"", xml_escape(&self.name), xml_escape(&self.value))
+        format!(
+            "{}=\"{}\"",
+            xml_escape(self.name.as_ref()),
+            xml_escape(self.value.as_ref())
+        )
     }
 }
 
 #[derive(Default)]
-pub struct XmlElement {
-    name: String,
-    attrs: Option<Vec<XmlAttribute>>,
-    body: Vec<Box<dyn XmlAsString>>,
+pub struct XmlElement<'a> {
+    name: &'a str,
+    attrs: Option<Vec<XmlAttribute<'a>>>,
+    body: Vec<Box<dyn XmlAsString + 'a>>,
 }
 
-impl XmlElement {
-    pub fn new(name: &str) -> Self {
+impl<'a> XmlElement<'a> {
+    pub fn new(name: &'a str) -> Self {
         XmlElement {
-            name: name.to_owned(),
+            name,
             ..Default::default()
         }
     }
 
-    pub fn with_attr(mut self, name: &str, value: &str) -> Self {
+    pub fn with_attr(mut self, name: impl AsRef<str> + 'a, value: impl AsRef<str> + 'a) -> Self {
         let attr = XmlAttribute {
-            name: name.to_owned(),
-            value: value.to_owned(),
+            name: Box::new(name),
+            value: Box::new(value),
         };
 
         match &mut self.attrs {
@@ -60,46 +65,54 @@ impl XmlElement {
         self
     }
 
-    pub fn with_element(mut self, element: impl XmlAsString + 'static) -> Self {
+    pub fn with_element(mut self, element: impl XmlAsString + 'a) -> Self {
         self.body.push(Box::new(element));
 
         self
     }
 
-    pub fn with_text_element(mut self, name: &str, text: &str) -> Self {
+    pub fn with_boxed_text_element(
+        mut self,
+        name: &'a str,
+        text: Box<impl AsRef<str> + 'a>,
+    ) -> Self {
         self.body.push(Box::new(XmlElement {
-            name: name.to_owned(),
-            body: vec![Box::new(XmlText {
-                text: text.to_owned(),
-            })],
+            name,
+            body: vec![Box::new(XmlText { text })],
             ..Default::default()
         }));
 
         self
     }
 
-    pub fn with_text(mut self, text: &str) -> Self {
-        self.body.push(Box::new(XmlText {
-            text: text.to_owned(),
-        }));
+    pub fn with_text_element(self, name: &'a str, text: &'a str) -> Self {
+        self.with_boxed_text_element(name, Box::new(text))
+    }
+
+    pub fn with_boxed_text(mut self, text: Box<impl AsRef<str> + 'a>) -> Self {
+        self.body.push(Box::new(XmlText { text }));
 
         self
     }
+
+    pub fn with_text(self, text: &'a str) -> Self {
+        self.with_boxed_text(Box::new(text))
+    }
 }
 
-impl XmlAsString for XmlElement {
+impl<'a> XmlAsString for XmlElement<'a> {
     fn as_str(&self) -> String {
         let name = xml_escape(&self.name);
         let mut attrs: String = match &self.attrs {
             Some(attrs) => {
                 if attrs.len() < 1 {
-                    return "".to_owned();
+                    return "".to_string();
                 }
 
                 let attr_str_vec: Vec<String> = attrs.into_iter().map(|a| a.as_str()).collect();
                 attr_str_vec.join(" ")
             }
-            None => "".to_owned(),
+            None => "".to_string(),
         };
 
         let body_str_vec: Vec<String> = (&self.body).into_iter().map(|e| e.as_str()).collect();

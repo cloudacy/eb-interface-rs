@@ -1,6 +1,7 @@
 pub mod address;
 pub mod biller;
 pub mod contact;
+pub mod decimal;
 pub mod details;
 pub mod document;
 pub mod identification;

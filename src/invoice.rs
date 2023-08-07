@@ -1,8 +1,9 @@
-use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
+use rust_decimal::Decimal;
 use std::collections::HashMap;
 
 use crate::{
     biller::Biller,
+    decimal::CloneAndRescale,
     details::Details,
     invoice_recipient::InvoiceRecipient,
     tax::{TaxCategory, TaxItem},
@@ -72,19 +73,13 @@ impl Invoice<'_> {
             .with_element(self.invoice_recipient.as_xml())
             .with_element(self.details.as_xml())
             .with_element(tax)
-            .with_text_element(
+            .with_boxed_text_element(
                 "TotalGrossAmount",
-                &format!(
-                    "{:.2}",
-                    total_gross_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-                ),
+                Box::new(total_gross_amount.clone_with_scale(2).to_string()),
             )
-            .with_text_element(
+            .with_boxed_text_element(
                 "PayableAmount",
-                &format!(
-                    "{:.2}",
-                    payable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-                ),
+                Box::new(payable_amount.clone_with_scale(2).to_string()),
             );
 
         format!(

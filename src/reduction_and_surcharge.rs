@@ -1,6 +1,6 @@
-use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
+use rust_decimal::Decimal;
 
-use crate::xml::XmlElement;
+use crate::{decimal::CloneAndRescale, xml::XmlElement};
 
 pub enum ReductionAndSurchargeValue {
     Percentage(Decimal),
@@ -26,34 +26,31 @@ impl ReductionAndSurchargeListLineItemBase<'_> {
     }
 
     fn as_xml(&self) -> Vec<XmlElement> {
-        let mut es = vec![XmlElement::new("BaseAmount").with_text(&format!(
-            "{:.2}",
-            self.base_amount
-                .round_dp_with_strategy(2, MidpointAwayFromZero)
-        ))];
+        let mut es = vec![XmlElement::new("BaseAmount")
+            .with_boxed_text(Box::new(self.base_amount.clone_with_scale(2).to_string()))];
 
         match self.value {
             ReductionAndSurchargeValue::Percentage(percentage) => {
-                es.push(XmlElement::new("Percentage").with_text(&format!(
-                    "{:.2}",
-                    percentage.round_dp_with_strategy(2, MidpointAwayFromZero)
-                )));
+                es.push(
+                    XmlElement::new("Percentage")
+                        .with_boxed_text(Box::new(percentage.clone_with_scale(2).to_string())),
+                );
             }
             ReductionAndSurchargeValue::Amount(amount) => {
-                es.push(XmlElement::new("Amount").with_text(&format!(
-                    "{:.2}",
-                    amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-                )));
+                es.push(
+                    XmlElement::new("Amount")
+                        .with_boxed_text(Box::new(amount.clone_with_scale(2).to_string())),
+                );
             }
             ReductionAndSurchargeValue::PercentageAndAmount(percentage, amount) => {
-                es.push(XmlElement::new("Percentage").with_text(&format!(
-                    "{:.2}",
-                    percentage.round_dp_with_strategy(2, MidpointAwayFromZero)
-                )));
-                es.push(XmlElement::new("Amount").with_text(&format!(
-                    "{:.2}",
-                    amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-                )));
+                es.push(
+                    XmlElement::new("Percentage")
+                        .with_boxed_text(Box::new(percentage.clone_with_scale(2).to_string())),
+                );
+                es.push(
+                    XmlElement::new("Amount")
+                        .with_boxed_text(Box::new(amount.clone_with_scale(2).to_string())),
+                );
             }
         }
 
@@ -69,11 +66,11 @@ pub struct ReductionListLineItem<'a> {
     base: ReductionAndSurchargeListLineItemBase<'a>,
 }
 
-impl ReductionListLineItem<'_> {
+impl<'a> ReductionListLineItem<'a> {
     pub fn new(
         base_amount: Decimal,
         value: ReductionAndSurchargeValue,
-        comment: Option<&'static str>,
+        comment: Option<&'a str>,
     ) -> Self {
         ReductionListLineItem {
             base: ReductionAndSurchargeListLineItemBase {
@@ -103,11 +100,11 @@ pub struct SurchargeListLineItem<'a> {
     base: ReductionAndSurchargeListLineItemBase<'a>,
 }
 
-impl SurchargeListLineItem<'_> {
+impl<'a> SurchargeListLineItem<'a> {
     pub fn new(
         base_amount: Decimal,
         value: ReductionAndSurchargeValue,
-        comment: Option<&'static str>,
+        comment: Option<&'a str>,
     ) -> Self {
         SurchargeListLineItem {
             base: ReductionAndSurchargeListLineItemBase {
@@ -180,7 +177,7 @@ mod tests {
 
     #[test]
     fn generates_reduction_and_surcharge_list_line_item() {
-        let result = ReductionAndSurchargeListLineItemDetails {
+        let reduction_and_surcharge = ReductionAndSurchargeListLineItemDetails {
             reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                 dec!(100),
                 ReductionAndSurchargeValue::Percentage(dec!(2)),
@@ -191,15 +188,15 @@ mod tests {
                 ReductionAndSurchargeValue::Amount(dec!(3)),
                 Some("surcharge"),
             )]),
-        }
-        .as_xml();
+        };
+        let result = reduction_and_surcharge.as_xml();
 
         assert_eq!(
             result.as_str(),
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Percentage>2.00</Percentage><Comment>reduction</Comment></ReductionListLineItem><SurchargeListLineItem><BaseAmount>200.00</BaseAmount><Amount>3.00</Amount><Comment>surcharge</Comment></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
 
-        let result = ReductionAndSurchargeListLineItemDetails {
+        let reduction_and_surcharge = ReductionAndSurchargeListLineItemDetails {
             reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                 dec!(100),
                 ReductionAndSurchargeValue::Amount(dec!(2)),
@@ -210,23 +207,23 @@ mod tests {
                 ReductionAndSurchargeValue::Percentage(dec!(3)),
                 Some("surcharge"),
             )]),
-        }
-        .as_xml();
+        };
+        let result = reduction_and_surcharge.as_xml();
 
         assert_eq!(
             result.as_str(),
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Amount>2.00</Amount><Comment>reduction</Comment></ReductionListLineItem><SurchargeListLineItem><BaseAmount>200.00</BaseAmount><Percentage>3.00</Percentage><Comment>surcharge</Comment></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
 
-        let result = ReductionAndSurchargeListLineItemDetails {
+        let reduction_and_surcharge = ReductionAndSurchargeListLineItemDetails {
             reduction_list_line_items: Some(vec![ReductionListLineItem::new(
                 dec!(100),
                 ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3)),
                 Some("reduction"),
             )]),
             ..Default::default()
-        }
-        .as_xml();
+        };
+        let result = reduction_and_surcharge.as_xml();
 
         assert_eq!(
             result.as_str(),

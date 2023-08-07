@@ -1,8 +1,9 @@
+use rust_decimal::Decimal;
+
 use crate::{
-    reduction_and_surcharge::ReductionAndSurchargeListLineItemDetails, tax::TaxItem,
-    xml::XmlElement,
+    decimal::CloneAndRescale, reduction_and_surcharge::ReductionAndSurchargeListLineItemDetails,
+    tax::TaxItem, xml::XmlElement,
 };
-use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
 
 #[derive(Default)]
 pub struct DetailsItem<'a> {
@@ -37,12 +38,12 @@ impl DetailsItem<'_> {
             * ((self.tax_item.tax_percent + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
     }
 
-    pub fn as_xml(&self) -> XmlElement {
+    pub fn as_xml<'a>(&'a self) -> XmlElement<'a> {
         let mut e = XmlElement::new("ListLineItem");
 
         // PositionNumber.
         if let Some(pn) = self.position_number {
-            e = e.with_text_element("PositionNumber", &format!("{pn}"));
+            e = e.with_boxed_text_element("PositionNumber", Box::new(pn.to_string()));
         }
 
         // Description(s).
@@ -54,21 +55,14 @@ impl DetailsItem<'_> {
         e = e.with_element(
             XmlElement::new("Quantity")
                 .with_attr("Unit", self.unit)
-                .with_text(&format!(
-                    "{:.4}",
-                    self.quantity
-                        .round_dp_with_strategy(4, MidpointAwayFromZero)
-                )),
+                .with_boxed_text(Box::new(self.quantity.clone_with_scale(4).to_string())),
         );
 
         // UnitPrice and BaseQuantity.
-        let mut up = XmlElement::new("UnitPrice").with_text(&format!(
-            "{:.4}",
-            self.unit_price
-                .round_dp_with_strategy(4, MidpointAwayFromZero)
-        ));
+        let mut up = XmlElement::new("UnitPrice")
+            .with_boxed_text(Box::new(self.unit_price.clone_with_scale(4).to_string()));
         if let Some(bq) = &self.base_quantity {
-            up = up.with_attr("BaseQuantity", &format!("{bq}"))
+            up = up.with_attr("BaseQuantity", bq.to_string())
         }
         e = e.with_element(up);
 
@@ -84,13 +78,9 @@ impl DetailsItem<'_> {
         e = e.with_element(self.tax_item.as_xml(&taxable_amount));
 
         // LineItemAmount.
-        e = e.with_text_element(
+        e = e.with_boxed_text_element(
             "LineItemAmount",
-            &format!(
-                "{:.2}",
-                self.line_item_amount()
-                    .round_dp_with_strategy(2, MidpointAwayFromZero)
-            ),
+            Box::new(self.line_item_amount().clone_with_scale(2).to_string()),
         );
 
         e
@@ -134,7 +124,7 @@ mod tests {
         let quantity = dec!(0.005);
         let unit_price = dec!(0.005);
 
-        let result = DetailsItem {
+        let item: DetailsItem<'_> = DetailsItem {
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
@@ -144,8 +134,8 @@ mod tests {
                 tax_category: TaxCategory::S,
             },
             ..Default::default()
-        }
-        .as_xml();
+        };
+        let result = item.as_xml();
 
         assert_eq!(
             result.as_str(),
@@ -158,7 +148,7 @@ mod tests {
         let quantity = dec!(100.123456);
         let unit_price = dec!(10.20005);
 
-        let result = DetailsItem {
+        let item = DetailsItem {
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
@@ -168,8 +158,8 @@ mod tests {
                 tax_category: TaxCategory::S,
             },
             ..Default::default()
-        }
-        .as_xml();
+        };
+        let result = item.as_xml();
 
         assert_eq!(
             result.as_str(),
@@ -179,7 +169,7 @@ mod tests {
 
     #[test]
     fn calculates_reduction_correctly() {
-        let result = DetailsItem {
+        let item = DetailsItem {
             description: vec!["Handbuch zur Schraube"],
             quantity: dec!(1),
             unit: "STK",
@@ -197,8 +187,8 @@ mod tests {
                 tax_category: TaxCategory::AA,
             },
             ..Default::default()
-        }
-        .as_xml();
+        };
+        let result = item.as_xml();
 
         assert_eq!(
             result.as_str(),
@@ -208,7 +198,7 @@ mod tests {
 
     #[test]
     fn calculates_surcharge_correctly() {
-        let result = DetailsItem {
+        let item = DetailsItem {
             description: vec!["Handbuch zur Schraube"],
             quantity: dec!(1),
             unit: "STK",
@@ -226,8 +216,8 @@ mod tests {
                 tax_category: TaxCategory::AA,
             },
             ..Default::default()
-        }
-        .as_xml();
+        };
+        let result = item.as_xml();
 
         assert_eq!(
             result.as_str(),
@@ -240,7 +230,7 @@ mod tests {
         let quantity = dec!(100.12344);
         let unit_price = dec!(10.20001);
 
-        let result = DetailsItem {
+        let item = DetailsItem {
             description: vec!["Sand"],
             quantity: quantity,
             unit: "KGM",
@@ -250,8 +240,8 @@ mod tests {
                 tax_category: TaxCategory::S,
             },
             ..Default::default()
-        }
-        .as_xml();
+        };
+        let result = item.as_xml();
 
         assert_eq!(
             result.as_str(),

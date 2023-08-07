@@ -1,7 +1,8 @@
-use crate::xml::XmlElement;
-use rust_decimal::{Decimal, RoundingStrategy::MidpointAwayFromZero};
+use rust_decimal::Decimal;
 
-#[derive(Eq, PartialEq, Hash, Ord, PartialOrd, Clone, Default)]
+use crate::{decimal::CloneAndRescale, xml::XmlElement};
+
+#[derive(Eq, PartialEq, Hash, Ord, PartialOrd, Copy, Clone, Default)]
 pub enum TaxCategory {
     #[default]
     S,
@@ -44,28 +45,22 @@ pub struct TaxItem {
 }
 
 impl TaxItem {
-    pub fn as_xml(&self, taxable_amount: &Decimal) -> XmlElement {
+    pub fn as_xml<'a>(&self, taxable_amount: &Decimal) -> XmlElement<'a> {
         let tax_amount = taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
 
         XmlElement::new("TaxItem")
-            .with_text_element(
+            .with_boxed_text_element(
                 "TaxableAmount",
-                &format!(
-                    "{:.2}",
-                    taxable_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-                ),
+                Box::new(taxable_amount.clone_with_scale(2).to_string()),
             )
             .with_element(
                 XmlElement::new("TaxPercent")
-                    .with_attr("TaxCategoryCode", self.tax_category.as_str())
-                    .with_text(&format!("{}", self.tax_percent)),
+                    .with_attr("TaxCategoryCode", self.tax_category.as_str().to_string())
+                    .with_boxed_text(Box::new(self.tax_percent.to_string())),
             )
-            .with_text_element(
+            .with_boxed_text_element(
                 "TaxAmount",
-                &format!(
-                    "{:.2}",
-                    tax_amount.round_dp_with_strategy(2, MidpointAwayFromZero)
-                ),
+                Box::new(tax_amount.clone_with_scale(2).to_string()),
             )
     }
 }
