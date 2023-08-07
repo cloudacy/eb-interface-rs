@@ -164,20 +164,115 @@ mod tests {
     }
 
     #[test]
-    fn generates_xml() {
+    fn generates_xml_element() {
+        assert_eq!(XmlElement::new("foo").to_string(), "<foo></foo>");
+    }
+
+    #[test]
+    fn generates_xml_text() {
         assert_eq!(
-            XmlElement::new("test")
-                .with_attr("foo", "bar")
-                .with_text("baz")
-                .to_string(),
-            "<test foo=\"bar\">baz</test>"
+            XmlElement::new("foo").with_text("bar").to_string(),
+            "<foo>bar</foo>"
         );
+    }
+
+    #[test]
+    fn generates_xml_texts() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_text("b")
+                .with_text("a")
+                .with_text("r")
+                .to_string(),
+            "<foo>bar</foo>"
+        );
+    }
+
+    #[test]
+    fn generates_xml_attribute() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_attr("a", "b")
+                .with_text("bar")
+                .to_string(),
+            "<foo a=\"b\">bar</foo>"
+        );
+    }
+
+    #[test]
+    fn generates_xml_attributes() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_attr("a", "b")
+                .with_attr("c", "d")
+                .with_text("bar")
+                .to_string(),
+            "<foo a=\"b\" c=\"d\">bar</foo>"
+        );
+    }
+
+    #[test]
+    fn generates_nested_xml_element() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_element(XmlElement::new("a"))
+                .to_string(),
+            "<foo><a></a></foo>"
+        );
+    }
+
+    #[test]
+    fn generates_nested_xml_element_with_text() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_element(XmlElement::new("a").with_text("b"))
+                .to_string(),
+            "<foo><a>b</a></foo>"
+        );
+    }
+
+    #[test]
+    fn generates_nested_xml_element_before_text() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_element(XmlElement::new("a"))
+                .with_text("b")
+                .to_string(),
+            "<foo><a></a>b</foo>"
+        );
+    }
+
+    #[test]
+    fn generates_nested_xml_element_between_text() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_text("a")
+                .with_element(XmlElement::new("b"))
+                .with_text("c")
+                .to_string(),
+            "<foo>a<b></b>c</foo>"
+        );
+    }
+
+    #[test]
+    fn generates_nested_xml_element_after_text() {
+        assert_eq!(
+            XmlElement::new("foo")
+                .with_text("a")
+                .with_element(XmlElement::new("b"))
+                .to_string(),
+            "<foo>a<b></b></foo>"
+        );
+    }
+
+    #[test]
+    fn generates_escaped_xml() {
         assert_eq!(
             XmlElement::new("a")
-                .with_attr("foo", "bar")
-                .with_element(XmlElement::new("b").with_attr("c", "d&e"))
+                .with_attr("foo", "b<>ar")
+                .with_element(XmlElement::new("b").with_attr("c", "\"d&e"))
                 .to_string(),
-            "<a foo=\"bar\"><b c=\"d&amp;e\"></b></a>"
+            "<a foo=\"b&lt;&gt;ar\"><b c=\"&quot;d&amp;e\"></b></a>"
         );
     }
 }
