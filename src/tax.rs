@@ -49,18 +49,15 @@ impl TaxItem {
         let tax_amount = taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
 
         XmlElement::new("TaxItem")
-            .with_boxed_text_element(
+            .with_text_element(
                 "TaxableAmount",
-                Box::new(taxable_amount.clone_with_scale(2).to_string()),
+                taxable_amount.clone_with_scale(2).to_string(),
             )
             .with_element(
                 XmlElement::new("TaxPercent")
                     .with_attr("TaxCategoryCode", self.tax_category.as_str().to_string())
-                    .with_boxed_text(Box::new(self.tax_percent.to_string())),
+                    .with_text(self.tax_percent.to_string()),
             )
-            .with_boxed_text_element(
-                "TaxAmount",
-                Box::new(tax_amount.clone_with_scale(2).to_string()),
-            )
+            .with_text_element("TaxAmount", tax_amount.clone_with_scale(2).to_string())
     }
 }

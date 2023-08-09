@@ -27,29 +27,27 @@ impl ReductionAndSurchargeListLineItemBase<'_> {
 
     fn as_xml(&self) -> Vec<XmlElement> {
         let mut es = vec![XmlElement::new("BaseAmount")
-            .with_boxed_text(Box::new(self.base_amount.clone_with_scale(2).to_string()))];
+            .with_text(self.base_amount.clone_with_scale(2).to_string())];
 
         match self.value {
             ReductionAndSurchargeValue::Percentage(percentage) => {
                 es.push(
                     XmlElement::new("Percentage")
-                        .with_boxed_text(Box::new(percentage.clone_with_scale(2).to_string())),
+                        .with_text(percentage.clone_with_scale(2).to_string()),
                 );
             }
             ReductionAndSurchargeValue::Amount(amount) => {
                 es.push(
-                    XmlElement::new("Amount")
-                        .with_boxed_text(Box::new(amount.clone_with_scale(2).to_string())),
+                    XmlElement::new("Amount").with_text(amount.clone_with_scale(2).to_string()),
                 );
             }
             ReductionAndSurchargeValue::PercentageAndAmount(percentage, amount) => {
                 es.push(
                     XmlElement::new("Percentage")
-                        .with_boxed_text(Box::new(percentage.clone_with_scale(2).to_string())),
+                        .with_text(percentage.clone_with_scale(2).to_string()),
                 );
                 es.push(
-                    XmlElement::new("Amount")
-                        .with_boxed_text(Box::new(amount.clone_with_scale(2).to_string())),
+                    XmlElement::new("Amount").with_text(amount.clone_with_scale(2).to_string()),
                 );
             }
         }

@@ -43,7 +43,7 @@ impl DetailsItem<'_> {
 
         // PositionNumber.
         if let Some(pn) = self.position_number {
-            e = e.with_boxed_text_element("PositionNumber", Box::new(pn.to_string()));
+            e = e.with_text_element("PositionNumber", pn.to_string());
         }
 
         // Description(s).
@@ -55,12 +55,12 @@ impl DetailsItem<'_> {
         e = e.with_element(
             XmlElement::new("Quantity")
                 .with_attr("Unit", self.unit)
-                .with_boxed_text(Box::new(self.quantity.clone_with_scale(4).to_string())),
+                .with_text(self.quantity.clone_with_scale(4).to_string()),
         );
 
         // UnitPrice and BaseQuantity.
-        let mut up = XmlElement::new("UnitPrice")
-            .with_boxed_text(Box::new(self.unit_price.clone_with_scale(4).to_string()));
+        let mut up =
+            XmlElement::new("UnitPrice").with_text(self.unit_price.clone_with_scale(4).to_string());
         if let Some(bq) = &self.base_quantity {
             up = up.with_attr("BaseQuantity", bq.to_string())
         }
@@ -78,9 +78,9 @@ impl DetailsItem<'_> {
         e = e.with_element(self.tax_item.as_xml(&taxable_amount));
 
         // LineItemAmount.
-        e = e.with_boxed_text_element(
+        e = e.with_text_element(
             "LineItemAmount",
-            Box::new(self.line_item_amount().clone_with_scale(2).to_string()),
+            self.line_item_amount().clone_with_scale(2).to_string(),
         );
 
         e

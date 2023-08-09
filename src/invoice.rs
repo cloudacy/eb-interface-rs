@@ -73,13 +73,13 @@ impl Invoice<'_> {
             .with_element(self.invoice_recipient.as_xml())
             .with_element(self.details.as_xml())
             .with_element(tax)
-            .with_boxed_text_element(
+            .with_text_element(
                 "TotalGrossAmount",
-                Box::new(total_gross_amount.clone_with_scale(2).to_string()),
+                total_gross_amount.clone_with_scale(2).to_string(),
             )
-            .with_boxed_text_element(
+            .with_text_element(
                 "PayableAmount",
-                Box::new(payable_amount.clone_with_scale(2).to_string()),
+                payable_amount.clone_with_scale(2).to_string(),
             );
 
         format!(

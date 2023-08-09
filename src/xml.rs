@@ -89,32 +89,24 @@ impl<'a> XmlElement<'a> {
         self
     }
 
-    pub fn with_boxed_text_element(
-        mut self,
-        name: &'a str,
-        text: Box<impl AsRef<str> + 'a>,
-    ) -> Self {
+    pub fn with_text_element(mut self, name: &'a str, text: impl AsRef<str> + 'a) -> Self {
         self.body.push(Box::new(XmlElement {
             name,
-            body: vec![Box::new(XmlText { text })],
+            body: vec![Box::new(XmlText {
+                text: Box::new(text),
+            })],
             ..Default::default()
         }));
 
         self
     }
 
-    pub fn with_text_element(self, name: &'a str, text: &'a str) -> Self {
-        self.with_boxed_text_element(name, Box::new(text))
-    }
-
-    pub fn with_boxed_text(mut self, text: Box<impl AsRef<str> + 'a>) -> Self {
-        self.body.push(Box::new(XmlText { text }));
+    pub fn with_text(mut self, text: impl AsRef<str> + 'a) -> Self {
+        self.body.push(Box::new(XmlText {
+            text: Box::new(text),
+        }));
 
         self
-    }
-
-    pub fn with_text(self, text: &'a str) -> Self {
-        self.with_boxed_text(Box::new(text))
     }
 }
 
