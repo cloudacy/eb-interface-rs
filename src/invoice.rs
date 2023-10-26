@@ -29,23 +29,12 @@ impl<'a> Invoice<'a> {
     pub fn with_payment_method(
         &mut self,
         payment_method: impl PaymentMethodType<'a> + 'a,
+        comment: Option<&'a str>,
     ) -> &Self {
         self.payment_method = Some(PaymentMethod {
             payment_method_type: Box::new(payment_method),
+            comment: comment,
             ..Default::default()
-        });
-
-        self
-    }
-
-    pub fn with_payment_method_and_comment(
-        &mut self,
-        payment_method: impl PaymentMethodType<'a> + 'a,
-        comment: &'a str,
-    ) -> &Self {
-        self.payment_method = Some(PaymentMethod {
-            comment: Some(comment),
-            payment_method_type: Box::new(payment_method),
         });
 
         self
