@@ -52,7 +52,15 @@ Invoice {
     },
     ..Default::default()
 }
-.to_xml_string(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
+.with_payment_method_and_comment(
+    PaymentMethodPaymentCard {
+        primary_account_number: "123456*4321",
+        card_holder_name: Some("Name"),
+    },
+    "Comment",
+)
+.to_xml_string()
+.unwrap(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
 ```
 
 ## Development

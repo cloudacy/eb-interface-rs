@@ -6,6 +6,7 @@ use crate::{
     decimal::CloneAndRescale,
     details::Details,
     invoice_recipient::InvoiceRecipient,
+    payment_method::{PaymentMethod, PaymentMethodType},
     tax::{TaxCategory, TaxItem},
     xml::{XmlElement, XmlToString},
 };
@@ -21,10 +22,36 @@ pub struct Invoice<'a> {
     pub biller: Biller<'a>,
     pub invoice_recipient: InvoiceRecipient<'a>,
     pub details: Details<'a>,
+    pub payment_method: Option<PaymentMethod<'a>>,
 }
 
-impl Invoice<'_> {
-    pub fn to_xml_string(&self) -> String {
+impl<'a> Invoice<'a> {
+    pub fn with_payment_method(
+        &mut self,
+        payment_method: impl PaymentMethodType<'a> + 'a,
+    ) -> &Self {
+        self.payment_method = Some(PaymentMethod {
+            payment_method_type: Box::new(payment_method),
+            ..Default::default()
+        });
+
+        self
+    }
+
+    pub fn with_payment_method_and_comment(
+        &mut self,
+        payment_method: impl PaymentMethodType<'a> + 'a,
+        comment: &'a str,
+    ) -> &Self {
+        self.payment_method = Some(PaymentMethod {
+            comment: Some(comment),
+            payment_method_type: Box::new(payment_method),
+        });
+
+        self
+    }
+
+    pub fn to_xml_string(&self) -> Result<String, String> {
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {
@@ -60,7 +87,7 @@ impl Invoice<'_> {
         let total_gross_amount = (&self.details.items).into_iter().fold(Decimal::ZERO, |sum, i| sum + i.line_item_total_gross_amount()) /* + sum of surcharges at root + sum of other_vat_able_taxes at root - sum of reductions at root */;
         let payable_amount = total_gross_amount /* - prepaid_amount + rounding_amount + sum of below_the_lines_items */;
 
-        let invoice = XmlElement::new("Invoice")
+        let mut invoice = XmlElement::new("Invoice")
             .with_attr("xmlns", "http://www.ebinterface.at/schema/6p1/")
             .with_attr("GeneratingSystem", self.generating_system)
             .with_attr("DocumentType", "Invoice")
@@ -71,7 +98,18 @@ impl Invoice<'_> {
             .with_text_element("InvoiceDate", self.invoice_date)
             .with_element(self.biller.as_xml())
             .with_element(self.invoice_recipient.as_xml())
-            .with_element(self.details.as_xml())
+            .with_element(self.details.as_xml());
+
+        if let Some(payment_method) = &self.payment_method {
+            match payment_method.as_xml() {
+                Ok(pm) => {
+                    invoice = invoice.with_element(pm);
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        invoice = invoice
             .with_element(tax)
             .with_text_element(
                 "TotalGrossAmount",
@@ -82,9 +120,9 @@ impl Invoice<'_> {
                 payable_amount.clone_with_scale(2).to_string(),
             );
 
-        format!(
+        Ok(format!(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>{}",
             invoice.to_string()
-        )
+        ))
     }
 }
