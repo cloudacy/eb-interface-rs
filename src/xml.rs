@@ -5,11 +5,11 @@ lazy_static! {
     static ref XML_ESCAPE_REGEX: Regex = Regex::new("[&\"'<>]").unwrap();
 }
 
-fn xml_escape<'a>(s: impl AsRef<str>) -> String {
+fn xml_escape(s: impl AsRef<str>) -> String {
     let r = s.as_ref();
     if let Some(m) = XML_ESCAPE_REGEX.find(r) {
         let mut o = r[0..m.start()].to_string();
-        for c in (&r[m.start()..]).chars() {
+        for c in r[m.start()..].chars() {
             match c {
                 '&' => o.push_str("&amp;"),
                 '"' => o.push_str("&quot;"),
@@ -112,23 +112,30 @@ impl<'a> XmlElement<'a> {
 
 impl<'a> XmlToString for XmlElement<'a> {
     fn to_string(&self) -> String {
-        let name = xml_escape(&self.name);
+        let name = xml_escape(self.name);
         let mut attrs: String = match &self.attrs {
             Some(attrs) => {
-                if attrs.len() < 1 {
+                if attrs.is_empty() {
                     return "".to_string();
                 }
 
-                let attr_str_vec: Vec<String> = attrs.into_iter().map(|a| a.to_string()).collect();
-                attr_str_vec.join(" ")
+                attrs
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ")
             }
             None => "".to_string(),
         };
 
-        let body_str_vec: Vec<String> = (&self.body).into_iter().map(|e| e.to_string()).collect();
-        let body = body_str_vec.join("");
+        let body = self
+            .body
+            .iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<String>>()
+            .join("");
 
-        if attrs.len() > 0 {
+        if !attrs.is_empty() {
             attrs.insert(0, ' ');
         }
 

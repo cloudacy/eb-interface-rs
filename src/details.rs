@@ -38,7 +38,7 @@ impl DetailsItem<'_> {
             * ((self.tax_item.tax_percent + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
     }
 
-    pub fn as_xml<'a>(&'a self) -> XmlElement<'a> {
+    pub fn as_xml(&self) -> XmlElement {
         let mut e = XmlElement::new("ListLineItem");
 
         // PositionNumber.
