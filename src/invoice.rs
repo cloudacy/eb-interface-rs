@@ -88,15 +88,6 @@ impl<'a> Invoice<'a> {
             .with_element(self.invoice_recipient.as_xml())
             .with_element(self.details.as_xml());
 
-        if let Some(payment_method) = &self.payment_method {
-            match payment_method.as_xml() {
-                Ok(pm) => {
-                    invoice = invoice.with_element(pm);
-                }
-                Err(e) => return Err(e),
-            }
-        }
-
         invoice = invoice
             .with_element(tax)
             .with_text_element(
@@ -107,6 +98,15 @@ impl<'a> Invoice<'a> {
                 "PayableAmount",
                 payable_amount.clone_with_scale(2).to_string(),
             );
+
+        if let Some(payment_method) = &self.payment_method {
+            match payment_method.as_xml() {
+                Ok(pm) => {
+                    invoice = invoice.with_element(pm);
+                }
+                Err(e) => return Err(e),
+            }
+        }
 
         Ok(format!(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>{}",
