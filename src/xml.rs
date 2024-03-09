@@ -1,9 +1,7 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
-lazy_static! {
-    static ref XML_ESCAPE_REGEX: Regex = Regex::new("[&\"'<>]").unwrap();
-}
+static XML_ESCAPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("[&\"'<>]").unwrap());
 
 fn xml_escape(s: impl AsRef<str>) -> String {
     let r = s.as_ref();
