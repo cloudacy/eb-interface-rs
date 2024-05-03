@@ -55,6 +55,11 @@ impl<'a> Invoice<'a> {
         self
     }
 
+    pub fn with_items(mut self, items: Vec<DetailsItem<'a>>) -> Self {
+        self.details.items = items;
+        self
+    }
+
     pub fn with_item(mut self, item: DetailsItem<'a>) -> Self {
         self.details.items.push(item);
         self
