@@ -37,8 +37,8 @@ mod tests {
         let result = Invoice {
             generating_system: "test",
             invoice_currency: "EUR",
-            document_title: "An invoice",
-            language: "de",
+            document_title: Some("An invoice"),
+            language: Some("de"),
             invoice_number: "993433000298",
             invoice_date: "2020-01-01",
             biller: Biller {

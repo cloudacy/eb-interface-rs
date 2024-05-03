@@ -15,8 +15,8 @@ use crate::{
 pub struct Invoice<'a> {
     pub generating_system: &'a str,
     pub invoice_currency: &'a str,
-    pub document_title: &'a str,
-    pub language: &'a str,
+    pub document_title: Option<&'a str>,
+    pub language: Option<&'a str>,
     pub invoice_number: &'a str,
     pub invoice_date: &'a str,
     pub biller: Biller<'a>,
@@ -79,9 +79,17 @@ impl<'a> Invoice<'a> {
             .with_attr("xmlns", "http://www.ebinterface.at/schema/6p1/")
             .with_attr("GeneratingSystem", self.generating_system)
             .with_attr("DocumentType", "Invoice")
-            .with_attr("InvoiceCurrency", self.invoice_currency)
-            .with_attr("DocumentTitle", self.document_title)
-            .with_attr("Language", self.language)
+            .with_attr("InvoiceCurrency", self.invoice_currency);
+
+        if let Some(document_title) = self.document_title {
+            invoice = invoice.with_attr("DocumentTitle", document_title);
+        }
+
+        if let Some(language) = self.language {
+            invoice = invoice.with_attr("Language", language);
+        }
+
+        invoice = invoice
             .with_text_element("InvoiceNumber", self.invoice_number)
             .with_text_element("InvoiceDate", self.invoice_date)
             .with_element(self.biller.as_xml())
