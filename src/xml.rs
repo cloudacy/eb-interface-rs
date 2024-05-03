@@ -1,6 +1,8 @@
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+use crate::utils::init_vec;
+
 static XML_ESCAPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("[&\"'<>]").unwrap());
 
 fn xml_escape(s: impl AsRef<str>) -> String {
@@ -73,10 +75,7 @@ impl<'a> XmlElement<'a> {
             value: Box::new(value),
         };
 
-        match &mut self.attrs {
-            Some(attrs) => attrs.push(attr),
-            None => self.attrs = Some(vec![attr]),
-        }
+        self.attrs.get_or_insert_with(init_vec).push(attr);
 
         self
     }

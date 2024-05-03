@@ -1,6 +1,6 @@
 use crate::{
     address::Address, contact::Contact, identification::FurtherIdentification,
-    order_reference::OrderReference, xml::XmlElement,
+    order_reference::OrderReference, utils::init_vec, xml::XmlElement,
 };
 
 #[derive(Default)]
@@ -24,12 +24,8 @@ impl<'a> Biller<'a> {
         mut self,
         further_identification: FurtherIdentification<'a>,
     ) -> Self {
-        let mut fi = match self.further_identification {
-            Some(fi) => fi,
-            None => vec![],
-        };
+        let fi = self.further_identification.get_or_insert_with(init_vec);
         fi.push(further_identification);
-        self.further_identification = Some(fi);
         self
     }
 

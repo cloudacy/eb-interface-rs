@@ -11,6 +11,7 @@ pub mod order_reference;
 pub mod payment_method;
 pub mod reduction_and_surcharge;
 pub mod tax;
+pub mod utils;
 pub mod xml;
 
 #[cfg(test)]

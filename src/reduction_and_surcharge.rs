@@ -1,6 +1,6 @@
 use rust_decimal::Decimal;
 
-use crate::{decimal::CloneAndRescale, xml::XmlElement};
+use crate::{decimal::CloneAndRescale, utils::init_vec, xml::XmlElement};
 
 pub enum ReductionAndSurchargeValue {
     Percentage(Decimal),
@@ -147,22 +147,14 @@ impl<'a> ReductionAndSurchargeListLineItemDetails<'a> {
     }
 
     pub fn with_reduction(mut self, reduction: ReductionListLineItem<'a>) -> Self {
-        let mut reductions = match self.reduction_list_line_items {
-            Some(r) => r,
-            None => vec![],
-        };
+        let reductions = self.reduction_list_line_items.get_or_insert_with(init_vec);
         reductions.push(reduction);
-        self.reduction_list_line_items = Some(reductions);
         self
     }
 
     pub fn with_surcharge(mut self, surcharge: SurchargeListLineItem<'a>) -> Self {
-        let mut surcharges = match self.surcharge_list_line_items {
-            Some(s) => s,
-            None => vec![],
-        };
+        let surcharges = self.surcharge_list_line_items.get_or_insert_with(init_vec);
         surcharges.push(surcharge);
-        self.surcharge_list_line_items = Some(surcharges);
         self
     }
 

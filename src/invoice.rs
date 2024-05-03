@@ -71,10 +71,7 @@ impl<'a> Invoice<'a> {
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {
             let k = i.tax_item_tuple();
-            let s = match tax_items.get(&k) {
-                Some(v) => v,
-                None => &Decimal::ZERO,
-            };
+            let s = tax_items.get(&k).unwrap_or(&Decimal::ZERO);
             tax_items.insert(k, s + i.line_item_amount());
         }
 

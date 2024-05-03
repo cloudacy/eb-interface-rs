@@ -77,10 +77,7 @@ impl<'a> DetailsItem<'a> {
     }
 
     pub fn line_item_amount(&self) -> Decimal {
-        let base_quantity = match self.base_quantity {
-            Some(bq) => bq,
-            None => Decimal::ONE,
-        };
+        let base_quantity = self.base_quantity.unwrap_or(Decimal::ONE);
 
         let reduction_and_surcharge_sum = match &self.reduction_and_surcharge {
             Some(rs) => rs.sum(),
