@@ -1,4 +1,4 @@
-use crate::{utils::init_vec, xml::XmlElement};
+use crate::xml::XmlElement;
 
 #[derive(Default)]
 pub struct Contact<'a> {
@@ -22,13 +22,13 @@ impl<'a> Contact<'a> {
     }
 
     pub fn with_phone(mut self, phone_number: &'a str) -> Self {
-        let phone_numbers = self.phone.get_or_insert_with(init_vec);
+        let phone_numbers = self.phone.get_or_insert_with(Vec::new);
         phone_numbers.push(phone_number);
         self
     }
 
     pub fn with_email(mut self, email_address: &'a str) -> Self {
-        let email_addresses = self.email.get_or_insert_with(init_vec);
+        let email_addresses = self.email.get_or_insert_with(Vec::new);
         email_addresses.push(email_address);
         self
     }
