@@ -290,14 +290,43 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
 
 #[derive(Default)]
 pub struct PaymentMethodUniversalBankTransaction<'a> {
-    pub consolidator_payable: Option<bool>,
-    pub beneficiary_account:
-        Option<Vec<PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a>>>,
-    pub payment_reference: Option<&'a str>,
-    pub payment_reference_checksum: Option<&'a str>,
+    consolidator_payable: Option<bool>,
+    beneficiary_account: Option<Vec<PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a>>>,
+    payment_reference: Option<&'a str>,
+    payment_reference_checksum: Option<&'a str>,
 }
 
 impl<'a> PaymentMethodUniversalBankTransaction<'a> {
+    pub fn new() -> PaymentMethodUniversalBankTransaction<'a> {
+        PaymentMethodUniversalBankTransaction {
+            ..Default::default()
+        }
+    }
+
+    pub fn with_consolidator_payable(mut self, consolidator_payable: bool) -> Self {
+        self.consolidator_payable = Some(consolidator_payable);
+        self
+    }
+
+    pub fn with_beneficiary_account(
+        mut self,
+        beneficiary_account: PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a>,
+    ) -> Self {
+        let beneficiary_accounts = self.beneficiary_account.get_or_insert_with(Vec::new);
+        beneficiary_accounts.push(beneficiary_account);
+        self
+    }
+
+    pub fn with_payment_reference(mut self, payment_reference: &'a str) -> Self {
+        self.payment_reference = Some(payment_reference);
+        self
+    }
+
+    pub fn with_payment_reference_checksum(mut self, payment_reference_checksum: &'a str) -> Self {
+        self.payment_reference_checksum = Some(payment_reference_checksum);
+        self
+    }
+
     fn as_xml(&self) -> Result<XmlElement<'a>, String> {
         let mut e = XmlElement::new("UniversalBankTransaction");
 
