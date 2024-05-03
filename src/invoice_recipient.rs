@@ -5,14 +5,49 @@ use crate::{
 
 #[derive(Default)]
 pub struct InvoiceRecipient<'a> {
-    pub vat_identification_number: &'a str,
-    pub further_identification: Option<Vec<FurtherIdentification<'a>>>,
-    pub order_reference: Option<OrderReference<'a>>,
-    pub address: Option<Address<'a>>,
-    pub contact: Option<Contact<'a>>,
+    vat_identification_number: &'a str,
+    further_identification: Option<Vec<FurtherIdentification<'a>>>,
+    order_reference: Option<OrderReference<'a>>,
+    address: Option<Address<'a>>,
+    contact: Option<Contact<'a>>,
 }
 
-impl InvoiceRecipient<'_> {
+impl<'a> InvoiceRecipient<'a> {
+    pub fn new(vat_identification_number: &str) -> InvoiceRecipient {
+        InvoiceRecipient {
+            vat_identification_number,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_further_identification(
+        mut self,
+        further_identification: FurtherIdentification<'a>,
+    ) -> Self {
+        let mut fi = match self.further_identification {
+            Some(fi) => fi,
+            None => vec![],
+        };
+        fi.push(further_identification);
+        self.further_identification = Some(fi);
+        self
+    }
+
+    pub fn with_order_reference(mut self, order_reference: OrderReference<'a>) -> Self {
+        self.order_reference = Some(order_reference);
+        self
+    }
+
+    pub fn with_address(mut self, address: Address<'a>) -> Self {
+        self.address = Some(address);
+        self
+    }
+
+    pub fn with_contact(mut self, contact: Contact<'a>) -> Self {
+        self.contact = Some(contact);
+        self
+    }
+
     pub fn as_xml(&self) -> XmlElement {
         let mut e = XmlElement::new("InvoiceRecipient")
             .with_text_element("VATIdentificationNumber", self.vat_identification_number);

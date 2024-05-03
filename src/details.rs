@@ -1,23 +1,81 @@
 use rust_decimal::Decimal;
 
 use crate::{
-    decimal::CloneAndRescale, reduction_and_surcharge::ReductionAndSurchargeListLineItemDetails,
-    tax::TaxItem, xml::XmlElement,
+    decimal::CloneAndRescale,
+    reduction_and_surcharge::{
+        ReductionAndSurchargeListLineItemDetails, ReductionListLineItem, SurchargeListLineItem,
+    },
+    tax::{TaxCategory, TaxItem},
+    xml::XmlElement,
 };
 
 #[derive(Default)]
 pub struct DetailsItem<'a> {
-    pub position_number: Option<u64>,
-    pub description: Vec<&'a str>,
-    pub quantity: Decimal,
-    pub unit: &'a str,
-    pub unit_price: Decimal,
-    pub base_quantity: Option<Decimal>,
-    pub reduction_and_surcharge: Option<ReductionAndSurchargeListLineItemDetails<'a>>,
-    pub tax_item: TaxItem,
+    position_number: Option<u64>,
+    description: Vec<&'a str>,
+    quantity: Decimal,
+    unit: &'a str,
+    unit_price: Decimal,
+    base_quantity: Option<Decimal>,
+    reduction_and_surcharge: Option<ReductionAndSurchargeListLineItemDetails<'a>>,
+    tax_item: TaxItem,
 }
 
-impl DetailsItem<'_> {
+impl<'a> DetailsItem<'a> {
+    pub fn new(
+        quantity: Decimal,
+        unit: &'a str,
+        unit_price: Decimal,
+        tax_item: TaxItem,
+    ) -> DetailsItem {
+        DetailsItem {
+            quantity,
+            unit,
+            unit_price,
+            tax_item,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_position_number(mut self, position_number: u64) -> Self {
+        self.position_number = Some(position_number);
+        self
+    }
+
+    pub fn with_description(mut self, description: &'a str) -> Self {
+        self.description.push(description);
+        self
+    }
+
+    pub fn with_base_quantity(mut self, base_quantity: Decimal) -> Self {
+        self.base_quantity = Some(base_quantity);
+        self
+    }
+
+    pub fn with_reduction(mut self, reduction: ReductionListLineItem<'a>) -> Self {
+        let mut ras = match self.reduction_and_surcharge {
+            Some(ras) => ras,
+            None => ReductionAndSurchargeListLineItemDetails::new(),
+        };
+        ras = ras.with_reduction(reduction);
+        self.reduction_and_surcharge = Some(ras);
+        self
+    }
+
+    pub fn with_surcharge(mut self, surcharge: SurchargeListLineItem<'a>) -> Self {
+        let mut ras = match self.reduction_and_surcharge {
+            Some(ras) => ras,
+            None => ReductionAndSurchargeListLineItemDetails::new(),
+        };
+        ras = ras.with_surcharge(surcharge);
+        self.reduction_and_surcharge = Some(ras);
+        self
+    }
+
+    pub fn tax_item_tuple(&self) -> (Decimal, TaxCategory) {
+        self.tax_item.tax_item_tuple()
+    }
+
     pub fn line_item_amount(&self) -> Decimal {
         let base_quantity = match self.base_quantity {
             Some(bq) => bq,
@@ -35,7 +93,7 @@ impl DetailsItem<'_> {
 
     pub fn line_item_total_gross_amount(&self) -> Decimal {
         self.line_item_amount()
-            * ((self.tax_item.tax_percent + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
+            * ((self.tax_item.percent() + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
     }
 
     pub fn as_xml(&self) -> XmlElement {
@@ -112,9 +170,7 @@ mod tests {
     use rust_decimal_macros::dec;
 
     use crate::{
-        reduction_and_surcharge::{
-            ReductionAndSurchargeValue, ReductionListLineItem, SurchargeListLineItem,
-        },
+        reduction_and_surcharge::{ReductionAndSurchargeValue, SurchargeListLineItem},
         tax::TaxCategory,
         xml::XmlToString,
     };
@@ -124,17 +180,13 @@ mod tests {
         let quantity = dec!(0.005);
         let unit_price = dec!(0.005);
 
-        let result = DetailsItem {
-            description: vec!["Sand"],
-            quantity: quantity,
-            unit: "KGM",
-            unit_price: unit_price,
-            tax_item: TaxItem {
-                tax_percent: dec!(20),
-                tax_category: TaxCategory::S,
-            },
-            ..Default::default()
-        }
+        let result = DetailsItem::new(
+            quantity,
+            "KGM",
+            unit_price,
+            TaxItem::new(dec!(20), TaxCategory::S),
+        )
+        .with_description("Sand")
         .as_xml()
         .to_string();
 
@@ -149,17 +201,13 @@ mod tests {
         let quantity = dec!(100.123456);
         let unit_price = dec!(10.20005);
 
-        let result = DetailsItem {
-            description: vec!["Sand"],
-            quantity: quantity,
-            unit: "KGM",
-            unit_price: unit_price,
-            tax_item: TaxItem {
-                tax_percent: dec!(20),
-                tax_category: TaxCategory::S,
-            },
-            ..Default::default()
-        }
+        let result = DetailsItem::new(
+            quantity,
+            "KGM",
+            unit_price,
+            TaxItem::new(dec!(20), TaxCategory::S),
+        )
+        .with_description("Sand")
         .as_xml()
         .to_string();
 
@@ -171,25 +219,17 @@ mod tests {
 
     #[test]
     fn calculates_reduction_correctly() {
-        let result = DetailsItem {
-            description: vec!["Handbuch zur Schraube"],
-            quantity: dec!(1),
-            unit: "STK",
-            unit_price: dec!(5.00),
-            reduction_and_surcharge: Some(ReductionAndSurchargeListLineItemDetails {
-                reduction_list_line_items: Some(vec![ReductionListLineItem::new(
-                    dec!(5),
-                    ReductionAndSurchargeValue::Amount(dec!(2)),
-                    None,
-                )]),
-                ..Default::default()
-            }),
-            tax_item: TaxItem {
-                tax_percent: dec!(10),
-                tax_category: TaxCategory::AA,
-            },
-            ..Default::default()
-        }
+        let result = DetailsItem::new(
+            dec!(1),
+            "STK",
+            dec!(5.00),
+            TaxItem::new(dec!(10), TaxCategory::AA),
+        )
+        .with_description("Handbuch zur Schraube")
+        .with_reduction(ReductionListLineItem::new(
+            dec!(5),
+            ReductionAndSurchargeValue::Amount(dec!(2)),
+        ))
         .as_xml()
         .to_string();
 
@@ -201,25 +241,17 @@ mod tests {
 
     #[test]
     fn calculates_surcharge_correctly() {
-        let result = DetailsItem {
-            description: vec!["Handbuch zur Schraube"],
-            quantity: dec!(1),
-            unit: "STK",
-            unit_price: dec!(5.00),
-            reduction_and_surcharge: Some(ReductionAndSurchargeListLineItemDetails {
-                surcharge_list_line_items: Some(vec![SurchargeListLineItem::new(
-                    dec!(5),
-                    ReductionAndSurchargeValue::Amount(dec!(2)),
-                    None,
-                )]),
-                ..Default::default()
-            }),
-            tax_item: TaxItem {
-                tax_percent: dec!(10),
-                tax_category: TaxCategory::AA,
-            },
-            ..Default::default()
-        }
+        let result = DetailsItem::new(
+            dec!(1),
+            "STK",
+            dec!(5.00),
+            TaxItem::new(dec!(10), TaxCategory::AA),
+        )
+        .with_description("Handbuch zur Schraube")
+        .with_surcharge(SurchargeListLineItem::new(
+            dec!(5),
+            ReductionAndSurchargeValue::Amount(dec!(2)),
+        ))
         .as_xml()
         .to_string();
 
@@ -234,17 +266,13 @@ mod tests {
         let quantity = dec!(100.12344);
         let unit_price = dec!(10.20001);
 
-        let result = DetailsItem {
-            description: vec!["Sand"],
-            quantity: quantity,
-            unit: "KGM",
-            unit_price: unit_price,
-            tax_item: TaxItem {
-                tax_percent: dec!(20),
-                tax_category: TaxCategory::S,
-            },
-            ..Default::default()
-        }
+        let result = DetailsItem::new(
+            quantity,
+            "KGM",
+            unit_price,
+            TaxItem::new(dec!(20), TaxCategory::S),
+        )
+        .with_description("Sand")
         .as_xml()
         .to_string();
 

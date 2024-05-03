@@ -5,14 +5,44 @@ use crate::{
 
 #[derive(Default)]
 pub struct Biller<'a> {
-    pub vat_identification_number: &'a str,
-    pub further_identification: Option<Vec<FurtherIdentification<'a>>>,
-    pub order_reference: Option<OrderReference<'a>>,
-    pub address: Option<Address<'a>>,
-    pub contact: Option<Contact<'a>>,
+    vat_identification_number: &'a str,
+    further_identification: Option<Vec<FurtherIdentification<'a>>>,
+    order_reference: Option<OrderReference<'a>>,
+    address: Option<Address<'a>>,
+    contact: Option<Contact<'a>>,
 }
 
-impl Biller<'_> {
+impl<'a> Biller<'a> {
+    pub fn new(vat_identification_number: &str) -> Biller {
+        Biller {
+            vat_identification_number,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_further_identification(
+        mut self,
+        further_identification: FurtherIdentification<'a>,
+    ) -> Self {
+        let mut fi = match self.further_identification {
+            Some(fi) => fi,
+            None => vec![],
+        };
+        fi.push(further_identification);
+        self.further_identification = Some(fi);
+        self
+    }
+
+    pub fn with_address(mut self, address: Address<'a>) -> Self {
+        self.address = Some(address);
+        self
+    }
+
+    pub fn with_contact(mut self, contact: Contact<'a>) -> Self {
+        self.contact = Some(contact);
+        self
+    }
+
     pub fn as_xml(&self) -> XmlElement {
         let mut e = XmlElement::new("Biller")
             .with_text_element("VATIdentificationNumber", self.vat_identification_number);

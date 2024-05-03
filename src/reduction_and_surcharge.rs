@@ -14,7 +14,18 @@ struct ReductionAndSurchargeListLineItemBase<'a> {
     comment: Option<&'a str>,
 }
 
-impl ReductionAndSurchargeListLineItemBase<'_> {
+impl<'a> ReductionAndSurchargeListLineItemBase<'a> {
+    pub fn new(
+        base_amount: Decimal,
+        value: ReductionAndSurchargeValue,
+    ) -> ReductionAndSurchargeListLineItemBase<'a> {
+        ReductionAndSurchargeListLineItemBase {
+            base_amount,
+            value,
+            comment: None,
+        }
+    }
+
     fn sum(&self) -> Decimal {
         match self.value {
             ReductionAndSurchargeValue::Percentage(percentage) => {
@@ -65,18 +76,15 @@ pub struct ReductionListLineItem<'a> {
 }
 
 impl<'a> ReductionListLineItem<'a> {
-    pub fn new(
-        base_amount: Decimal,
-        value: ReductionAndSurchargeValue,
-        comment: Option<&'a str>,
-    ) -> Self {
+    pub fn new(base_amount: Decimal, value: ReductionAndSurchargeValue) -> Self {
         ReductionListLineItem {
-            base: ReductionAndSurchargeListLineItemBase {
-                base_amount,
-                value,
-                comment,
-            },
+            base: ReductionAndSurchargeListLineItemBase::new(base_amount, value),
         }
+    }
+
+    pub fn with_comment(mut self, comment: &'a str) -> Self {
+        self.base.comment = Some(comment);
+        self
     }
 
     fn sum(&self) -> Decimal {
@@ -99,18 +107,15 @@ pub struct SurchargeListLineItem<'a> {
 }
 
 impl<'a> SurchargeListLineItem<'a> {
-    pub fn new(
-        base_amount: Decimal,
-        value: ReductionAndSurchargeValue,
-        comment: Option<&'a str>,
-    ) -> Self {
+    pub fn new(base_amount: Decimal, value: ReductionAndSurchargeValue) -> Self {
         SurchargeListLineItem {
-            base: ReductionAndSurchargeListLineItemBase {
-                base_amount,
-                value,
-                comment,
-            },
+            base: ReductionAndSurchargeListLineItemBase::new(base_amount, value),
         }
+    }
+
+    pub fn with_comment(mut self, comment: &'a str) -> Self {
+        self.base.comment = Some(comment);
+        self
     }
 
     fn sum(&self) -> Decimal {
@@ -130,11 +135,37 @@ impl<'a> SurchargeListLineItem<'a> {
 
 #[derive(Default)]
 pub struct ReductionAndSurchargeListLineItemDetails<'a> {
-    pub reduction_list_line_items: Option<Vec<ReductionListLineItem<'a>>>,
-    pub surcharge_list_line_items: Option<Vec<SurchargeListLineItem<'a>>>,
+    reduction_list_line_items: Option<Vec<ReductionListLineItem<'a>>>,
+    surcharge_list_line_items: Option<Vec<SurchargeListLineItem<'a>>>,
 }
 
-impl ReductionAndSurchargeListLineItemDetails<'_> {
+impl<'a> ReductionAndSurchargeListLineItemDetails<'a> {
+    pub fn new() -> ReductionAndSurchargeListLineItemDetails<'a> {
+        ReductionAndSurchargeListLineItemDetails {
+            ..Default::default()
+        }
+    }
+
+    pub fn with_reduction(mut self, reduction: ReductionListLineItem<'a>) -> Self {
+        let mut reductions = match self.reduction_list_line_items {
+            Some(r) => r,
+            None => vec![],
+        };
+        reductions.push(reduction);
+        self.reduction_list_line_items = Some(reductions);
+        self
+    }
+
+    pub fn with_surcharge(mut self, surcharge: SurchargeListLineItem<'a>) -> Self {
+        let mut surcharges = match self.surcharge_list_line_items {
+            Some(s) => s,
+            None => vec![],
+        };
+        surcharges.push(surcharge);
+        self.surcharge_list_line_items = Some(surcharges);
+        self
+    }
+
     pub fn sum(&self) -> Decimal {
         let surcharge_sum = match &self.surcharge_list_line_items {
             Some(s) => s.iter().fold(Decimal::ZERO, |sum, s| sum + s.sum()),
@@ -175,56 +206,56 @@ mod tests {
 
     #[test]
     fn generates_reduction_and_surcharge_list_line_item() {
-        let result = ReductionAndSurchargeListLineItemDetails {
-            reduction_list_line_items: Some(vec![ReductionListLineItem::new(
-                dec!(100),
-                ReductionAndSurchargeValue::Percentage(dec!(2)),
-                Some("reduction"),
-            )]),
-            surcharge_list_line_items: Some(vec![SurchargeListLineItem::new(
-                dec!(200),
-                ReductionAndSurchargeValue::Amount(dec!(3)),
-                Some("surcharge"),
-            )]),
-        }
-        .as_xml()
-        .to_string();
+        let result = ReductionAndSurchargeListLineItemDetails::new()
+            .with_reduction(
+                ReductionListLineItem::new(
+                    dec!(100),
+                    ReductionAndSurchargeValue::Percentage(dec!(2)),
+                )
+                .with_comment("reduction"),
+            )
+            .with_surcharge(
+                SurchargeListLineItem::new(dec!(200), ReductionAndSurchargeValue::Amount(dec!(3)))
+                    .with_comment("surcharge"),
+            )
+            .as_xml()
+            .to_string();
 
         assert_eq!(
             result,
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Percentage>2.00</Percentage><Comment>reduction</Comment></ReductionListLineItem><SurchargeListLineItem><BaseAmount>200.00</BaseAmount><Amount>3.00</Amount><Comment>surcharge</Comment></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
 
-        let result = ReductionAndSurchargeListLineItemDetails {
-            reduction_list_line_items: Some(vec![ReductionListLineItem::new(
-                dec!(100),
-                ReductionAndSurchargeValue::Amount(dec!(2)),
-                Some("reduction"),
-            )]),
-            surcharge_list_line_items: Some(vec![SurchargeListLineItem::new(
-                dec!(200),
-                ReductionAndSurchargeValue::Percentage(dec!(3)),
-                Some("surcharge"),
-            )]),
-        }
-        .as_xml()
-        .to_string();
+        let result = ReductionAndSurchargeListLineItemDetails::new()
+            .with_reduction(
+                ReductionListLineItem::new(dec!(100), ReductionAndSurchargeValue::Amount(dec!(2)))
+                    .with_comment("reduction"),
+            )
+            .with_surcharge(
+                SurchargeListLineItem::new(
+                    dec!(200),
+                    ReductionAndSurchargeValue::Percentage(dec!(3)),
+                )
+                .with_comment("surcharge"),
+            )
+            .as_xml()
+            .to_string();
 
         assert_eq!(
             result,
             "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Amount>2.00</Amount><Comment>reduction</Comment></ReductionListLineItem><SurchargeListLineItem><BaseAmount>200.00</BaseAmount><Percentage>3.00</Percentage><Comment>surcharge</Comment></SurchargeListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
 
-        let result = ReductionAndSurchargeListLineItemDetails {
-            reduction_list_line_items: Some(vec![ReductionListLineItem::new(
-                dec!(100),
-                ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3)),
-                Some("reduction"),
-            )]),
-            ..Default::default()
-        }
-        .as_xml()
-        .to_string();
+        let result = ReductionAndSurchargeListLineItemDetails::new()
+            .with_reduction(
+                ReductionListLineItem::new(
+                    dec!(100),
+                    ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3)),
+                )
+                .with_comment("reduction"),
+            )
+            .as_xml()
+            .to_string();
 
         assert_eq!(
             result,

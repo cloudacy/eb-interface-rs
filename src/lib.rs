@@ -21,111 +21,76 @@ mod tests {
     use address::Address;
     use biller::Biller;
     use contact::Contact;
-    use details::{Details, DetailsItem};
+    use details::DetailsItem;
     use identification::{FurtherIdentification, FurtherIdentificationType};
     use invoice::Invoice;
     use invoice_recipient::InvoiceRecipient;
     use order_reference::OrderReference;
-    use payment_method::PaymentMethodPaymentCard;
-    use reduction_and_surcharge::{
-        ReductionAndSurchargeListLineItemDetails, ReductionAndSurchargeValue, ReductionListLineItem,
-    };
+    use payment_method::{PaymentMethod, PaymentMethodPaymentCard};
+    use reduction_and_surcharge::{ReductionAndSurchargeValue, ReductionListLineItem};
     use tax::{TaxCategory, TaxItem};
 
     #[test]
     fn it_works() {
-        let result = Invoice {
-            generating_system: "test",
-            invoice_currency: "EUR",
-            document_title: Some("An invoice"),
-            language: Some("de"),
-            invoice_number: "993433000298",
-            invoice_date: "2020-01-01",
-            biller: Biller {
-                vat_identification_number: "ATU51507409",
-                further_identification: Some(vec![FurtherIdentification {
-                    id: "0012345",
-                    id_type: FurtherIdentificationType::DVR,
-                }]),
-                address: Some(Address {
-                    name: "Schrauben Mustermann",
-                    street: Some("Lassallenstraße 5"),
-                    town: "Wien",
-                    zip: "1020",
-                    country: "Österreich",
-                    country_code: Some("AT"),
-                    phone: Some(vec!["+43 / 1 / 78 56 789"]),
-                    email: Some(vec!["schrauben@mustermann.at"]),
-                }),
-                ..Default::default()
-            },
-            invoice_recipient: InvoiceRecipient {
-                vat_identification_number: "ATU18708634",
-                order_reference: Some(OrderReference {
-                    order_id: "test",
-                    ..Default::default()
-                }),
-                address: Some(Address {
-                    name: "Mustermann GmbH",
-                    street: Some("Hauptstraße 10"),
-                    town: "Graz",
-                    zip: "8010",
-                    country: "Österreich",
-                    country_code: Some("AT"),
-                    ..Default::default()
-                }),
-                contact: Some(Contact {
-                    name: "Max Mustermann",
-                    email: Some(vec!["schrauben@mustermann.at"]),
-                    ..Default::default()
-                }),
-                ..Default::default()
-            },
-            details: Details {
-                items: vec![
-                    DetailsItem {
-                        position_number: Some(1),
-                        description: vec!["Schraubenzieher"],
-                        quantity: dec!(100),
-                        unit: "STK",
-                        unit_price: dec!(10.20),
-                        base_quantity: Some(dec!(1)),
-                        tax_item: TaxItem {
-                            tax_percent: dec!(20),
-                            tax_category: TaxCategory::S,
-                        },
-                        ..Default::default()
-                    },
-                    DetailsItem {
-                        position_number: Some(2),
-                        description: vec!["Handbuch zur Schraube"],
-                        quantity: dec!(1),
-                        unit: "STK",
-                        unit_price: dec!(5.00),
-                        base_quantity: Some(dec!(1)),
-                        reduction_and_surcharge: Some(ReductionAndSurchargeListLineItemDetails {
-                            reduction_list_line_items: Some(vec![ReductionListLineItem::new(
-                                dec!(5),
-                                ReductionAndSurchargeValue::Amount(dec!(2)),
-                                Some("reduction"),
-                            )]),
-                            ..Default::default()
-                        }),
-                        tax_item: TaxItem {
-                            tax_percent: dec!(10),
-                            tax_category: TaxCategory::AA,
-                        },
-                    },
-                ],
-            },
-            ..Default::default()
-        }
+        let result = Invoice::new(
+            "test",
+            "EUR",
+            "993433000298",
+            "2020-01-01",
+            Biller::new("ATU51507409")
+                .with_further_identification(FurtherIdentification::new(
+                    "0012345",
+                    FurtherIdentificationType::DVR,
+                ))
+                .with_address(
+                    Address::new("Schrauben Mustermann", "Wien", "1020", "Österreich")
+                        .with_street("Lassallenstraße 5")
+                        .with_country_code("AT")
+                        .with_phone("+43 / 1 / 78 56 789")
+                        .with_email("schrauben@mustermann.at"),
+                ),
+            InvoiceRecipient::new("ATU18708634")
+                .with_order_reference(OrderReference::new("test"))
+                .with_address(
+                    Address::new("Mustermann GmbH", "Graz", "8010", "Österreich")
+                        .with_street("Hauptstraße 10")
+                        .with_country_code("AT"),
+                )
+                .with_contact(Contact::new("Max Mustermann").with_email("schrauben@mustermann.at")),
+        )
+        .with_item(
+            DetailsItem::new(
+                dec!(100),
+                "STK",
+                dec!(10.20),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            )
+            .with_position_number(1)
+            .with_description("Schraubenzieher")
+            .with_base_quantity(dec!(1)),
+        )
+        .with_item(
+            DetailsItem::new(
+                dec!(1),
+                "STK",
+                dec!(5.00),
+                TaxItem::new(dec!(10), TaxCategory::AA),
+            )
+            .with_position_number(2)
+            .with_description("Handbuch zur Schraube")
+            .with_base_quantity(dec!(1))
+            .with_reduction(
+                ReductionListLineItem::new(dec!(5), ReductionAndSurchargeValue::Amount(dec!(2)))
+                    .with_comment("reduction"),
+            ),
+        )
+        .with_document_title("An invoice")
+        .with_language("de")
         .with_payment_method(
-            PaymentMethodPaymentCard {
-                primary_account_number: "123456*4321",
-                card_holder_name: Some("Name"),
-            },
-            Some("Comment"),
+            PaymentMethod::payment_card(
+                PaymentMethodPaymentCard::new("123456*4321").with_card_holder_name("Name"),
+            )
+            .with_comment("Comment"),
         )
         .to_xml_string()
         .unwrap();

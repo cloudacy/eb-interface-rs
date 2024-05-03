@@ -40,11 +40,30 @@ impl TaxCategory {
 
 #[derive(Default)]
 pub struct TaxItem {
-    pub tax_percent: Decimal,
-    pub tax_category: TaxCategory,
+    tax_percent: Decimal,
+    tax_category: TaxCategory,
 }
 
 impl TaxItem {
+    pub fn new(tax_percent: Decimal, tax_category: TaxCategory) -> TaxItem {
+        TaxItem {
+            tax_percent,
+            tax_category,
+        }
+    }
+
+    pub fn percent(&self) -> Decimal {
+        self.tax_percent
+    }
+
+    pub fn category(&self) -> TaxCategory {
+        self.tax_category
+    }
+
+    pub fn tax_item_tuple(&self) -> (Decimal, TaxCategory) {
+        (self.tax_percent, self.tax_category)
+    }
+
     pub fn as_xml<'a>(&self, taxable_amount: &Decimal) -> XmlElement<'a> {
         let tax_amount = taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
 

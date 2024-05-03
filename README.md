@@ -20,44 +20,30 @@
 ## Example
 
 ```rust
-Invoice {
-    generating_system: "test",
-    invoice_currency: "EUR",
-    document_title: "An invoice",
-    language: "de",
-    invoice_number: "993433000298",
-    invoice_date: "2020-01-01",
-    biller: Biller {
-        vat_identification_number: "ATU51507409",
-        ..Default::default()
-    },
-    invoice_recipient: InvoiceRecipient {
-        vat_identification_number: "ATU18708634",
-        ..Default::default()
-    },
-    details: Details {
-        items: vec![
-            DetailsItem {
-                description: vec!["Schraubenzieher"],
-                quantity: dec!(100),
-                unit: "STK",
-                unit_price: dec!(10.20),
-                tax_item: TaxItem {
-                    tax_percent: dec!(20),
-                    tax_category: TaxCategory::S,
-                },
-                ..Default::default()
-            },
-        ],
-    },
-    ..Default::default()
-}
+Invoice::new(
+    "test",
+    "EUR",
+    "993433000298",
+    "2020-01-01",
+    Biller::new("ATU51507409"),
+    InvoiceRecipient::new("ATU18708634"),
+)
+.with_item(
+    DetailsItem::new(
+        dec!(100),
+        "STK",
+        dec!(10.20),
+        TaxItem::new(dec!(20), TaxCategory::S),
+    )
+    .with_description("Schraubenzieher")
+)
+.with_document_title("An invoice")
+.with_language("de")
 .with_payment_method(
-    PaymentMethodPaymentCard {
-        primary_account_number: "123456*4321",
-        card_holder_name: Some("Name"),
-    },
-    Some("Comment"),
+    PaymentMethod::payment_card(
+        PaymentMethodPaymentCard::new("123456*4321").with_card_holder_name("Name"),
+    )
+    .with_comment("Comment"),
 )
 .to_xml_string()
 .unwrap(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"

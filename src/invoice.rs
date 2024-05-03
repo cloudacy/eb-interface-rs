@@ -4,37 +4,64 @@ use std::collections::HashMap;
 use crate::{
     biller::Biller,
     decimal::CloneAndRescale,
-    details::Details,
+    details::{Details, DetailsItem},
     invoice_recipient::InvoiceRecipient,
-    payment_method::{PaymentMethod, PaymentMethodType},
+    payment_method::PaymentMethod,
     tax::{TaxCategory, TaxItem},
     xml::{XmlElement, XmlToString},
 };
 
 #[derive(Default)]
 pub struct Invoice<'a> {
-    pub generating_system: &'a str,
-    pub invoice_currency: &'a str,
-    pub document_title: Option<&'a str>,
-    pub language: Option<&'a str>,
-    pub invoice_number: &'a str,
-    pub invoice_date: &'a str,
-    pub biller: Biller<'a>,
-    pub invoice_recipient: InvoiceRecipient<'a>,
-    pub details: Details<'a>,
-    pub payment_method: Option<PaymentMethod<'a>>,
+    generating_system: &'a str,
+    invoice_currency: &'a str,
+    document_title: Option<&'a str>,
+    language: Option<&'a str>,
+    invoice_number: &'a str,
+    invoice_date: &'a str,
+    biller: Biller<'a>,
+    invoice_recipient: InvoiceRecipient<'a>,
+    details: Details<'a>,
+    payment_method: Option<PaymentMethod<'a>>,
 }
 
 impl<'a> Invoice<'a> {
-    pub fn with_payment_method(
-        &mut self,
-        payment_method: impl PaymentMethodType<'a> + 'a,
-        comment: Option<&'a str>,
-    ) -> &Self {
-        self.payment_method = Some(PaymentMethod {
-            payment_method_type: Box::new(payment_method),
-            comment,
-        });
+    pub fn new(
+        generating_system: &'a str,
+        invoice_currency: &'a str,
+        invoice_number: &'a str,
+        invoice_date: &'a str,
+        biller: Biller<'a>,
+        invoice_recipient: InvoiceRecipient<'a>,
+    ) -> Self {
+        Self {
+            generating_system,
+            invoice_currency,
+            invoice_number,
+            invoice_date,
+            biller,
+            invoice_recipient,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_document_title(mut self, document_title: &'a str) -> Self {
+        self.document_title = Some(document_title);
+        self
+    }
+
+    pub fn with_language(mut self, language: &'a str) -> Self {
+        self.language = Some(language);
+        self
+    }
+
+    pub fn with_item(mut self, item: DetailsItem<'a>) -> Self {
+        self.details.items.push(item);
+        self
+    }
+
+    pub fn with_payment_method(&mut self, payment_method: PaymentMethod<'a>) -> &Self {
+        self.payment_method = Some(payment_method);
 
         self
     }
@@ -43,7 +70,7 @@ impl<'a> Invoice<'a> {
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {
-            let k = (i.tax_item.tax_percent, i.tax_item.tax_category);
+            let k = i.tax_item_tuple();
             let s = match tax_items.get(&k) {
                 Some(v) => v,
                 None => &Decimal::ZERO,
@@ -58,13 +85,7 @@ impl<'a> Invoice<'a> {
 
         let tax_item_xmls = sorted_tax_item_entries
             .iter()
-            .map(|e| {
-                TaxItem {
-                    tax_percent: e.0 .0,
-                    tax_category: e.0 .1,
-                }
-                .as_xml(&e.1)
-            })
+            .map(|e| TaxItem::new(e.0 .0, e.0 .1).as_xml(&e.1))
             .collect::<Vec<XmlElement>>();
 
         let mut tax = XmlElement::new("Tax");

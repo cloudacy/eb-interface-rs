@@ -2,30 +2,85 @@ use regex::Regex;
 
 use crate::xml::XmlElement;
 
-pub trait PaymentMethodType<'a> {
-    fn as_xml(&self) -> Result<XmlElement<'a>, String>;
+#[derive(Default)]
+enum PaymentMethodType<'a> {
+    #[default]
+    NoPayment,
+    SEPADirectDebit(PaymentMethodSEPADirectDebit<'a>),
+    UniversalBankTransactionBeneficiaryAccount(
+        PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a>,
+    ),
+    UniversalBankTransaction(PaymentMethodUniversalBankTransaction<'a>),
+    PaymentCard(PaymentMethodPaymentCard<'a>),
+    OtherPayment,
 }
 
-pub struct PaymentMethodNoPayment {}
-
-impl<'a> PaymentMethodType<'a> for PaymentMethodNoPayment {
+impl<'a> PaymentMethodType<'a> {
     fn as_xml(&self) -> Result<XmlElement<'a>, String> {
-        Ok(XmlElement::new("NoPayment"))
+        match self {
+            PaymentMethodType::NoPayment => Ok(XmlElement::new("NoPayment")),
+            PaymentMethodType::SEPADirectDebit(p) => p.as_xml(),
+            PaymentMethodType::UniversalBankTransactionBeneficiaryAccount(p) => p.as_xml(),
+            PaymentMethodType::UniversalBankTransaction(p) => p.as_xml(),
+            PaymentMethodType::PaymentCard(p) => p.as_xml(),
+            PaymentMethodType::OtherPayment => Ok(XmlElement::new("OtherPayment")),
+        }
     }
 }
 
 #[derive(Default)]
 pub struct PaymentMethodSEPADirectDebit<'a> {
-    pub direct_debit_type: Option<&'a str>,
-    pub bic: Option<&'a str>,
-    pub iban: Option<&'a str>,
-    pub bank_account_owner: Option<&'a str>,
-    pub creditor_id: Option<&'a str>,
-    pub mandate_reference: Option<&'a str>,
-    pub debit_collection_date: Option<&'a str>,
+    direct_debit_type: Option<&'a str>,
+    bic: Option<&'a str>,
+    iban: Option<&'a str>,
+    bank_account_owner: Option<&'a str>,
+    creditor_id: Option<&'a str>,
+    mandate_reference: Option<&'a str>,
+    debit_collection_date: Option<&'a str>,
 }
 
-impl<'a> PaymentMethodType<'a> for PaymentMethodSEPADirectDebit<'a> {
+impl<'a> PaymentMethodSEPADirectDebit<'a> {
+    pub fn new() -> PaymentMethodSEPADirectDebit<'a> {
+        PaymentMethodSEPADirectDebit {
+            ..Default::default()
+        }
+    }
+
+    pub fn with_direct_debit_type(mut self, direct_debit_type: &'a str) -> Self {
+        self.direct_debit_type = Some(direct_debit_type);
+        self
+    }
+
+    pub fn with_bic(mut self, bic: &'a str) -> Self {
+        self.bic = Some(bic);
+        self
+    }
+
+    pub fn with_iban(mut self, iban: &'a str) -> Self {
+        self.iban = Some(iban);
+        self
+    }
+
+    pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Self {
+        self.bank_account_owner = Some(bank_account_owner);
+        self
+    }
+
+    pub fn with_creditor_id(mut self, creditor_id: &'a str) -> Self {
+        self.creditor_id = Some(creditor_id);
+        self
+    }
+
+    pub fn with_mandate_reference(mut self, mandate_reference: &'a str) -> Self {
+        self.mandate_reference = Some(mandate_reference);
+        self
+    }
+
+    pub fn with_debit_collection_date(mut self, debit_collection_date: &'a str) -> Self {
+        self.debit_collection_date = Some(debit_collection_date);
+        self
+    }
+
     fn as_xml(&self) -> Result<XmlElement<'a>, String> {
         let mut e = XmlElement::new("SEPADirectDebit");
 
@@ -101,21 +156,72 @@ impl<'a> PaymentMethodType<'a> for PaymentMethodSEPADirectDebit<'a> {
 
 /// - bank_code_type: ISO 3166-1 Code
 pub struct PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a> {
-    pub bank_code: i64,
-    pub bank_code_type: &'a str,
+    bank_code: i64,
+    bank_code_type: &'a str,
+}
+
+impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a> {
+    pub fn new(
+        bank_code: i64,
+        bank_code_type: &'a str,
+    ) -> PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a> {
+        PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode {
+            bank_code,
+            bank_code_type,
+        }
+    }
 }
 
 #[derive(Default)]
 pub struct PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
-    pub bank_name: Option<&'a str>,
-    pub bank_code: Option<PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a>>,
-    pub bic: Option<&'a str>,
-    pub bank_account_number: Option<&'a str>,
-    pub iban: Option<&'a str>,
-    pub bank_account_owner: Option<&'a str>,
+    bank_name: Option<&'a str>,
+    bank_code: Option<PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a>>,
+    bic: Option<&'a str>,
+    bank_account_number: Option<&'a str>,
+    iban: Option<&'a str>,
+    bank_account_owner: Option<&'a str>,
 }
 
-impl<'a> PaymentMethodType<'a> for PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
+impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
+    pub fn new() -> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
+        PaymentMethodUniversalBankTransactionBeneficiaryAccount {
+            ..Default::default()
+        }
+    }
+
+    pub fn with_bank_name(mut self, bank_name: &'a str) -> Self {
+        self.bank_name = Some(bank_name);
+        self
+    }
+
+    pub fn with_bank_code(
+        mut self,
+        bank_code: PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a>,
+    ) -> Self {
+        self.bank_code = Some(bank_code);
+        self
+    }
+
+    pub fn with_bic(mut self, bic: &'a str) -> Self {
+        self.bic = Some(bic);
+        self
+    }
+
+    pub fn with_bank_account_number(mut self, bank_account_number: &'a str) -> Self {
+        self.bank_account_number = Some(bank_account_number);
+        self
+    }
+
+    pub fn with_iban(mut self, iban: &'a str) -> Self {
+        self.iban = Some(iban);
+        self
+    }
+
+    pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Self {
+        self.bank_account_owner = Some(bank_account_owner);
+        self
+    }
+
     fn as_xml(&self) -> Result<XmlElement<'a>, String> {
         let mut e = XmlElement::new("BeneficiaryAccount");
 
@@ -191,7 +297,7 @@ pub struct PaymentMethodUniversalBankTransaction<'a> {
     pub payment_reference_checksum: Option<&'a str>,
 }
 
-impl<'a> PaymentMethodType<'a> for PaymentMethodUniversalBankTransaction<'a> {
+impl<'a> PaymentMethodUniversalBankTransaction<'a> {
     fn as_xml(&self) -> Result<XmlElement<'a>, String> {
         let mut e = XmlElement::new("UniversalBankTransaction");
 
@@ -235,11 +341,23 @@ impl<'a> PaymentMethodType<'a> for PaymentMethodUniversalBankTransaction<'a> {
 /// - primary_account_number: Only provide at most the first 6 and last 4 digits, separated with a "*".
 #[derive(Default)]
 pub struct PaymentMethodPaymentCard<'a> {
-    pub primary_account_number: &'a str,
-    pub card_holder_name: Option<&'a str>,
+    primary_account_number: &'a str,
+    card_holder_name: Option<&'a str>,
 }
 
-impl<'a> PaymentMethodType<'a> for PaymentMethodPaymentCard<'a> {
+impl<'a> PaymentMethodPaymentCard<'a> {
+    pub fn new(primary_account_number: &'a str) -> PaymentMethodPaymentCard {
+        PaymentMethodPaymentCard {
+            primary_account_number,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_card_holder_name(mut self, card_holder_name: &'a str) -> Self {
+        self.card_holder_name = Some(card_holder_name);
+        self
+    }
+
     fn as_xml(&self) -> Result<XmlElement<'a>, String> {
         let mut e = XmlElement::new("PaymentCard");
 
@@ -261,32 +379,65 @@ impl<'a> PaymentMethodType<'a> for PaymentMethodPaymentCard<'a> {
     }
 }
 
-pub struct PaymentMethodOtherPayment {}
-
-impl<'a> PaymentMethodType<'a> for PaymentMethodOtherPayment {
-    fn as_xml(&self) -> Result<XmlElement<'a>, String> {
-        Ok(XmlElement::new("OtherPayment"))
-    }
-}
-
 #[derive(Default)]
 pub struct PaymentMethod<'a> {
-    pub comment: Option<&'a str>,
-    pub payment_method_type: Box<dyn PaymentMethodType<'a> + 'a>,
-}
-
-impl<'a> Default for Box<dyn PaymentMethodType<'a>> {
-    fn default() -> Box<(dyn PaymentMethodType<'a>)> {
-        Box::new(PaymentMethodNoPayment {})
-    }
+    comment: Option<&'a str>,
+    method: PaymentMethodType<'a>,
 }
 
 impl<'a> PaymentMethod<'a> {
-    pub fn with_method_type(
-        mut self,
-        payment_method_type: impl PaymentMethodType<'a> + 'a,
-    ) -> Self {
-        self.payment_method_type = Box::new(payment_method_type);
+    pub fn no_payment() -> PaymentMethod<'a> {
+        PaymentMethod {
+            method: PaymentMethodType::NoPayment,
+            ..Default::default()
+        }
+    }
+
+    pub fn sepa_direct_debit(
+        sepa_direct_debit: PaymentMethodSEPADirectDebit<'a>,
+    ) -> PaymentMethod<'a> {
+        PaymentMethod {
+            method: PaymentMethodType::SEPADirectDebit(sepa_direct_debit),
+            ..Default::default()
+        }
+    }
+
+    pub fn universal_bank_transaction(
+        universal_bank_transaction: PaymentMethodUniversalBankTransaction<'a>,
+    ) -> PaymentMethod<'a> {
+        PaymentMethod {
+            method: PaymentMethodType::UniversalBankTransaction(universal_bank_transaction),
+            ..Default::default()
+        }
+    }
+
+    pub fn universal_bank_transaction_beneficiary_account(
+        universal_bank_transaction_beneficiary_account: PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a>,
+    ) -> PaymentMethod<'a> {
+        PaymentMethod {
+            method: PaymentMethodType::UniversalBankTransactionBeneficiaryAccount(
+                universal_bank_transaction_beneficiary_account,
+            ),
+            ..Default::default()
+        }
+    }
+
+    pub fn payment_card(payment_card: PaymentMethodPaymentCard<'a>) -> PaymentMethod<'a> {
+        PaymentMethod {
+            method: PaymentMethodType::PaymentCard(payment_card),
+            ..Default::default()
+        }
+    }
+
+    pub fn other_payment() -> PaymentMethod<'a> {
+        PaymentMethod {
+            method: PaymentMethodType::OtherPayment,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_comment(mut self, comment: &'a str) -> Self {
+        self.comment = Some(comment);
         self
     }
 
@@ -297,7 +448,7 @@ impl<'a> PaymentMethod<'a> {
             e = e.with_text_element("Comment", comment);
         }
 
-        match self.payment_method_type.as_xml() {
+        match self.method.as_xml() {
             Ok(pmt) => {
                 e = e.with_element(pmt);
             }
@@ -330,13 +481,7 @@ mod tests {
     #[test]
     fn no_payment() {
         assert_eq!(
-            PaymentMethod {
-                ..Default::default()
-            }
-            .with_method_type(PaymentMethodNoPayment {})
-            .as_xml()
-            .unwrap()
-            .to_string(),
+            PaymentMethod::no_payment().as_xml().unwrap().to_string(),
             "<PaymentMethod><NoPayment></NoPayment></PaymentMethod>"
         )
     }
@@ -344,10 +489,7 @@ mod tests {
     #[test]
     fn sepa_direct_debit() {
         assert_eq!(
-            PaymentMethod {
-                ..Default::default()
-            }
-            .with_method_type(PaymentMethodSEPADirectDebit {
+            PaymentMethod::sepa_direct_debit(PaymentMethodSEPADirectDebit {
                 direct_debit_type: Some("B2B"),
                 bic: Some("BKAUATWW"),
                 iban: Some("AT491200011111111111"),
@@ -367,10 +509,7 @@ mod tests {
     #[test]
     fn universal_bank_transaction() {
         assert_eq!(
-            PaymentMethod {
-                ..Default::default()
-            }
-            .with_method_type(PaymentMethodUniversalBankTransaction {
+            PaymentMethod::universal_bank_transaction(PaymentMethodUniversalBankTransaction {
                 consolidator_payable: Some(true),
                 beneficiary_account: Some(vec![PaymentMethodUniversalBankTransactionBeneficiaryAccount {
                     bank_name: Some("Bank"),
@@ -396,10 +535,7 @@ mod tests {
     #[test]
     fn payment_card() {
         assert_eq!(
-            PaymentMethod {
-                ..Default::default()
-            }
-            .with_method_type(PaymentMethodPaymentCard {
+            PaymentMethod::payment_card(PaymentMethodPaymentCard {
                 primary_account_number: "123456*4321",
                 card_holder_name: Some("Name"),
             })
@@ -413,13 +549,7 @@ mod tests {
     #[test]
     fn other_payment() {
         assert_eq!(
-            PaymentMethod {
-                ..Default::default()
-            }
-            .with_method_type(PaymentMethodOtherPayment {})
-            .as_xml()
-            .unwrap()
-            .to_string(),
+            PaymentMethod::other_payment().as_xml().unwrap().to_string(),
             "<PaymentMethod><OtherPayment></OtherPayment></PaymentMethod>"
         )
     }

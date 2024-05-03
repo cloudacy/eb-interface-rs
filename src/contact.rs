@@ -2,13 +2,45 @@ use crate::xml::XmlElement;
 
 #[derive(Default)]
 pub struct Contact<'a> {
-    pub salutation: Option<&'a str>,
-    pub name: &'a str,
-    pub phone: Option<Vec<&'a str>>,
-    pub email: Option<Vec<&'a str>>,
+    salutation: Option<&'a str>,
+    name: &'a str,
+    phone: Option<Vec<&'a str>>,
+    email: Option<Vec<&'a str>>,
 }
 
-impl Contact<'_> {
+impl<'a> Contact<'a> {
+    pub fn new(name: &str) -> Contact {
+        Contact {
+            name,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_salutation(mut self, salutation: &'a str) -> Self {
+        self.salutation = Some(salutation);
+        self
+    }
+
+    pub fn with_phone(mut self, phone_number: &'a str) -> Self {
+        let mut phone_numbers = match self.phone {
+            Some(p) => p,
+            None => vec![],
+        };
+        phone_numbers.push(phone_number);
+        self.phone = Some(phone_numbers);
+        self
+    }
+
+    pub fn with_email(mut self, email_address: &'a str) -> Self {
+        let mut email_addresses = match self.email {
+            Some(e) => e,
+            None => vec![],
+        };
+        email_addresses.push(email_address);
+        self.email = Some(email_addresses);
+        self
+    }
+
     pub fn as_xml(&self) -> XmlElement {
         let mut e = XmlElement::new("Contact");
 

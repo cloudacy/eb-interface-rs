@@ -40,11 +40,15 @@ impl FurtherIdentificationType {
 }
 
 pub struct FurtherIdentification<'a> {
-    pub id: &'a str,
-    pub id_type: FurtherIdentificationType,
+    id: &'a str,
+    id_type: FurtherIdentificationType,
 }
 
 impl FurtherIdentification<'_> {
+    pub fn new(id: &str, id_type: FurtherIdentificationType) -> FurtherIdentification {
+        FurtherIdentification { id, id_type }
+    }
+
     pub fn as_xml(&self) -> XmlElement {
         XmlElement::new("FurtherIdentification")
             .with_attr("IdentificationType", self.id_type.as_str())
