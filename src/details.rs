@@ -225,14 +225,14 @@ mod tests {
         .with_description("Handbuch zur Schraube")
         .with_reduction(ReductionListLineItem::new(
             dec!(5),
-            ReductionAndSurchargeValue::Amount(dec!(2)),
+            ReductionAndSurchargeValue::Amount(dec!(2.3399)),
         ))
         .as_xml()
         .to_string();
 
         assert_eq!(
             result,
-            "<ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice>5.0000</UnitPrice><ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>5.00</BaseAmount><Amount>2.00</Amount></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails><TaxItem><TaxableAmount>3.00</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.30</TaxAmount></TaxItem><LineItemAmount>3.00</LineItemAmount></ListLineItem>"
+            "<ListLineItem><Description>Handbuch zur Schraube</Description><Quantity Unit=\"STK\">1.0000</Quantity><UnitPrice>5.0000</UnitPrice><ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>5.00</BaseAmount><Amount>2.34</Amount></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails><TaxItem><TaxableAmount>2.66</TaxableAmount><TaxPercent TaxCategoryCode=\"AA\">10</TaxPercent><TaxAmount>0.27</TaxAmount></TaxItem><LineItemAmount>2.66</LineItemAmount></ListLineItem>"
         );
     }
 

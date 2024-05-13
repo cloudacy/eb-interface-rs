@@ -29,10 +29,12 @@ impl<'a> ReductionAndSurchargeListLineItemBase<'a> {
     fn sum(&self) -> Decimal {
         match self.value {
             ReductionAndSurchargeValue::Percentage(percentage) => {
-                self.base_amount * percentage / Decimal::ONE_HUNDRED
+                (self.base_amount * percentage / Decimal::ONE_HUNDRED).clone_with_scale(2)
             }
-            ReductionAndSurchargeValue::Amount(amount) => amount,
-            ReductionAndSurchargeValue::PercentageAndAmount(_, amount) => amount,
+            ReductionAndSurchargeValue::Amount(amount) => amount.clone_with_scale(2),
+            ReductionAndSurchargeValue::PercentageAndAmount(_, amount) => {
+                amount.clone_with_scale(2)
+            }
         }
     }
 
@@ -242,7 +244,7 @@ mod tests {
             .with_reduction(
                 ReductionListLineItem::new(
                     dec!(100),
-                    ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3)),
+                    ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3.4599)),
                 )
                 .with_comment("reduction"),
             )
@@ -251,7 +253,7 @@ mod tests {
 
         assert_eq!(
             result,
-            "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Percentage>2.00</Percentage><Amount>3.00</Amount><Comment>reduction</Comment></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails>"
+            "<ReductionAndSurchargeListLineItemDetails><ReductionListLineItem><BaseAmount>100.00</BaseAmount><Percentage>2.00</Percentage><Amount>3.46</Amount><Comment>reduction</Comment></ReductionListLineItem></ReductionAndSurchargeListLineItemDetails>"
         );
     }
 }
