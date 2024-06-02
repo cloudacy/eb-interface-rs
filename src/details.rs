@@ -84,7 +84,7 @@ impl<'a> DetailsItem<'a> {
             None => Decimal::ZERO,
         };
 
-        self.quantity * self.unit_price / base_quantity + reduction_and_surcharge_sum
+        (self.quantity * self.unit_price / base_quantity + reduction_and_surcharge_sum).round_dp(2)
         /* + sum of other_vat_able_tax_list_line_item.tax_amount */
     }
 
