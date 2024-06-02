@@ -71,7 +71,7 @@ impl<'a> Invoice<'a> {
         self
     }
 
-    pub fn to_xml_string(&self) -> Result<String, String> {
+    fn invoice_tax_items(&self) -> Vec<((Decimal, TaxCategory), Decimal)> {
         // Collect all taxes, grouped by tuples of tax_percent and tax_category.
         let mut tax_items: HashMap<(Decimal, TaxCategory), Decimal> = HashMap::new();
         for i in &self.details.items {
@@ -85,7 +85,12 @@ impl<'a> Invoice<'a> {
             tax_items.into_iter().collect();
         sorted_tax_item_entries.sort_by_key(|k| (k.0 .0, k.0 .1));
 
-        let tax_item_xmls = sorted_tax_item_entries
+        sorted_tax_item_entries
+    }
+
+    pub fn to_xml_string(&self) -> Result<String, String> {
+        let tax_item_xmls = self
+            .invoice_tax_items()
             .iter()
             .map(|e| TaxItem::new(e.0 .0, e.0 .1).as_xml(&e.1))
             .collect::<Vec<XmlElement>>();
@@ -143,5 +148,60 @@ impl<'a> Invoice<'a> {
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>{}",
             invoice.to_string()
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rust_decimal_macros::dec;
+
+    use super::*;
+
+    #[test]
+    fn correctly_calculates_tax() {
+        let invoice = Invoice::new(
+            "test",
+            "EUR",
+            "0000",
+            "2024-06-02",
+            Biller::new("ATU00000000"),
+            InvoiceRecipient::new("ATU000000000"),
+        )
+        .with_items(vec![
+            DetailsItem::new(
+                dec!(5.19),
+                "h",
+                dec!(106.23),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            ),
+            DetailsItem::new(
+                dec!(3.2),
+                "h",
+                dec!(106.23),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            ),
+            DetailsItem::new(
+                dec!(3.00),
+                "h",
+                dec!(106.23),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            ),
+            DetailsItem::new(
+                dec!(0.84),
+                "h",
+                dec!(106.23),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            ),
+            DetailsItem::new(
+                dec!(14.62),
+                "h",
+                dec!(106.23),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            ),
+        ]);
+
+        let tax_items = invoice.invoice_tax_items();
+
+        assert_eq!(tax_items.first().map_or(dec!(0), |i| i.1), dec!(2852.27))
     }
 }
