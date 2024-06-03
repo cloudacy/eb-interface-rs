@@ -134,10 +134,7 @@ impl<'a> DetailsItem<'a> {
         e = e.with_element(self.tax_item.as_xml(&taxable_amount));
 
         // LineItemAmount.
-        e = e.with_text_element(
-            "LineItemAmount",
-            self.line_item_amount().clone_with_scale(2).to_string(),
-        );
+        e = e.with_text_element("LineItemAmount", self.line_item_amount().to_string());
 
         e
     }
