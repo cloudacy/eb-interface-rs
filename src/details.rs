@@ -1,4 +1,4 @@
-use rust_decimal::Decimal;
+use rust_decimal::{Decimal, RoundingStrategy};
 
 use crate::{
     decimal::CloneAndRescale,
@@ -84,7 +84,8 @@ impl<'a> DetailsItem<'a> {
             None => Decimal::ZERO,
         };
 
-        self.quantity * self.unit_price / base_quantity + reduction_and_surcharge_sum
+        (self.quantity * self.unit_price / base_quantity + reduction_and_surcharge_sum)
+            .round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero)
         /* + sum of other_vat_able_tax_list_line_item.tax_amount */
     }
 
@@ -133,10 +134,7 @@ impl<'a> DetailsItem<'a> {
         e = e.with_element(self.tax_item.as_xml(&taxable_amount));
 
         // LineItemAmount.
-        e = e.with_text_element(
-            "LineItemAmount",
-            self.line_item_amount().clone_with_scale(2).to_string(),
-        );
+        e = e.with_text_element("LineItemAmount", self.line_item_amount().to_string());
 
         e
     }
