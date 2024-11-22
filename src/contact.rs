@@ -1,4 +1,4 @@
-use crate::xml::XmlElement;
+use crate::xml::{ToXml, XmlElement};
 
 #[derive(Default)]
 pub struct Contact<'a> {
@@ -22,18 +22,18 @@ impl<'a> Contact<'a> {
     }
 
     pub fn with_phone(mut self, phone_number: &'a str) -> Self {
-        let phone_numbers = self.phone.get_or_insert_with(Vec::new);
-        phone_numbers.push(phone_number);
+        self.phone.get_or_insert_with(Vec::new).push(phone_number);
         self
     }
 
     pub fn with_email(mut self, email_address: &'a str) -> Self {
-        let email_addresses = self.email.get_or_insert_with(Vec::new);
-        email_addresses.push(email_address);
+        self.email.get_or_insert_with(Vec::new).push(email_address);
         self
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for Contact<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("Contact");
 
         if let Some(s) = self.salutation {
@@ -54,6 +54,6 @@ impl<'a> Contact<'a> {
             }
         }
 
-        e
+        e.to_xml()
     }
 }

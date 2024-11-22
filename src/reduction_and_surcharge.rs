@@ -1,6 +1,9 @@
 use rust_decimal::Decimal;
 
-use crate::{decimal::CloneAndRescale, xml::XmlElement};
+use crate::{
+    decimal::CloneAndRescale,
+    xml::{ToXml, XmlElement},
+};
 
 pub enum ReductionAndSurchargeValue {
     Percentage(Decimal),
@@ -15,7 +18,7 @@ struct ReductionAndSurchargeListLineItemBase<'a> {
 }
 
 impl<'a> ReductionAndSurchargeListLineItemBase<'a> {
-    pub fn new(
+    fn new(
         base_amount: Decimal,
         value: ReductionAndSurchargeValue,
     ) -> ReductionAndSurchargeListLineItemBase<'a> {
@@ -38,7 +41,7 @@ impl<'a> ReductionAndSurchargeListLineItemBase<'a> {
         }
     }
 
-    fn as_xml(&self) -> Vec<XmlElement> {
+    fn to_xml_elements(&self) -> Vec<XmlElement> {
         let mut es = vec![XmlElement::new("BaseAmount")
             .with_text(self.base_amount.clone_with_scale(2).to_string())];
 
@@ -92,15 +95,17 @@ impl<'a> ReductionListLineItem<'a> {
     fn sum(&self) -> Decimal {
         self.base.sum()
     }
+}
 
-    fn as_xml(&self) -> XmlElement {
+impl ToXml for ReductionListLineItem<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("ReductionListLineItem");
 
-        for base_element in self.base.as_xml() {
-            e = e.with_element(base_element);
+        for base_element in self.base.to_xml_elements() {
+            e = e.with_element(&base_element);
         }
 
-        e
+        e.to_xml()
     }
 }
 
@@ -123,15 +128,17 @@ impl<'a> SurchargeListLineItem<'a> {
     fn sum(&self) -> Decimal {
         self.base.sum()
     }
+}
 
-    fn as_xml(&self) -> XmlElement {
+impl ToXml for SurchargeListLineItem<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("SurchargeListLineItem");
 
-        for base_element in self.base.as_xml() {
-            e = e.with_element(base_element);
+        for base_element in self.base.to_xml_elements() {
+            e = e.with_element(&base_element);
         }
 
-        e
+        e.to_xml()
     }
 }
 
@@ -149,18 +156,20 @@ impl<'a> ReductionAndSurchargeListLineItemDetails<'a> {
     }
 
     pub fn with_reduction(mut self, reduction: ReductionListLineItem<'a>) -> Self {
-        let reductions = self.reduction_list_line_items.get_or_insert_with(Vec::new);
-        reductions.push(reduction);
+        self.reduction_list_line_items
+            .get_or_insert_with(Vec::new)
+            .push(reduction);
         self
     }
 
     pub fn with_surcharge(mut self, surcharge: SurchargeListLineItem<'a>) -> Self {
-        let surcharges = self.surcharge_list_line_items.get_or_insert_with(Vec::new);
-        surcharges.push(surcharge);
+        self.surcharge_list_line_items
+            .get_or_insert_with(Vec::new)
+            .push(surcharge);
         self
     }
 
-    pub fn sum(&self) -> Decimal {
+    pub(crate) fn sum(&self) -> Decimal {
         let surcharge_sum = match &self.surcharge_list_line_items {
             Some(s) => s.iter().fold(Decimal::ZERO, |sum, s| sum + s.sum()),
             None => Decimal::ZERO,
@@ -171,23 +180,25 @@ impl<'a> ReductionAndSurchargeListLineItemDetails<'a> {
         };
         surcharge_sum - reduction_sum
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for ReductionAndSurchargeListLineItemDetails<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("ReductionAndSurchargeListLineItemDetails");
 
         if let Some(reduction_list_line_items) = &self.reduction_list_line_items {
             for reduction_list_line_item in reduction_list_line_items {
-                e = e.with_element(reduction_list_line_item.as_xml());
+                e = e.with_element(reduction_list_line_item);
             }
         }
 
         if let Some(surcharge_list_line_items) = &self.surcharge_list_line_items {
             for surcharge_list_line_item in surcharge_list_line_items {
-                e = e.with_element(surcharge_list_line_item.as_xml());
+                e = e.with_element(surcharge_list_line_item);
             }
         }
 
-        e
+        e.to_xml()
     }
 }
 
@@ -196,7 +207,7 @@ mod tests {
     use super::*;
     use rust_decimal_macros::dec;
 
-    use crate::xml::XmlToString;
+    use crate::xml::ToXml;
 
     #[test]
     fn generates_reduction_and_surcharge_list_line_item() {
@@ -212,8 +223,7 @@ mod tests {
                 SurchargeListLineItem::new(dec!(200), ReductionAndSurchargeValue::Amount(dec!(3)))
                     .with_comment("surcharge"),
             )
-            .as_xml()
-            .to_string();
+            .to_xml();
 
         assert_eq!(
             result,
@@ -232,8 +242,7 @@ mod tests {
                 )
                 .with_comment("surcharge"),
             )
-            .as_xml()
-            .to_string();
+            .to_xml();
 
         assert_eq!(
             result,
@@ -248,8 +257,7 @@ mod tests {
                 )
                 .with_comment("reduction"),
             )
-            .as_xml()
-            .to_string();
+            .to_xml();
 
         assert_eq!(
             result,

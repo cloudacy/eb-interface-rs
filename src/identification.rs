@@ -1,4 +1,4 @@
-use crate::xml::XmlElement;
+use crate::xml::{ToXml, XmlElement};
 
 pub enum FurtherIdentificationType {
     ARA,
@@ -18,8 +18,8 @@ pub enum FurtherIdentificationType {
     VN,
 }
 
-impl FurtherIdentificationType {
-    pub fn as_str(&self) -> &str {
+impl ToString for FurtherIdentificationType {
+    fn to_string(&self) -> String {
         match self {
             FurtherIdentificationType::ARA => "ARA",
             FurtherIdentificationType::BBG_GZ => "BBG_GZ",
@@ -36,6 +36,7 @@ impl FurtherIdentificationType {
             FurtherIdentificationType::VID => "VID",
             FurtherIdentificationType::VN => "VN",
         }
+        .to_owned()
     }
 }
 
@@ -48,10 +49,13 @@ impl FurtherIdentification<'_> {
     pub fn new(id: &str, id_type: FurtherIdentificationType) -> FurtherIdentification {
         FurtherIdentification { id, id_type }
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for FurtherIdentification<'_> {
+    fn to_xml(&self) -> String {
         XmlElement::new("FurtherIdentification")
-            .with_attr("IdentificationType", self.id_type.as_str())
+            .with_attr("IdentificationType", self.id_type.to_string())
             .with_text(self.id)
+            .to_xml()
     }
 }

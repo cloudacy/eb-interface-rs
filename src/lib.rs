@@ -11,7 +11,7 @@ pub mod order_reference;
 pub mod payment_method;
 pub mod reduction_and_surcharge;
 pub mod tax;
-pub mod xml;
+pub(crate) mod xml;
 
 #[cfg(test)]
 mod tests {
@@ -88,12 +88,13 @@ mod tests {
         .with_language("de")
         .with_payment_method(
             PaymentMethod::payment_card(
-                PaymentMethodPaymentCard::new("123456*4321").with_card_holder_name("Name"),
+                PaymentMethodPaymentCard::new("123456*4321")
+                    .and_then(|s| Ok(s.with_card_holder_name("Name")))
+                    .unwrap_or_else(|e| panic!("{e}")),
             )
             .with_comment("Comment"),
         )
-        .to_xml_string()
-        .unwrap();
+        .to_xml();
 
         assert_eq!(
             result,

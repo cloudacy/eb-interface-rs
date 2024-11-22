@@ -1,6 +1,9 @@
 use rust_decimal::Decimal;
 
-use crate::{decimal::CloneAndRescale, xml::XmlElement};
+use crate::{
+    decimal::CloneAndRescale,
+    xml::{ToXml, XmlElement},
+};
 
 #[derive(Eq, PartialEq, Hash, Ord, PartialOrd, Copy, Clone, Default)]
 pub enum TaxCategory {
@@ -19,8 +22,8 @@ pub enum TaxCategory {
     Z,
 }
 
-impl TaxCategory {
-    pub fn as_str(&self) -> &str {
+impl ToString for TaxCategory {
+    fn to_string(&self) -> String {
         match self {
             TaxCategory::S => "S",
             TaxCategory::AA => "AA",
@@ -35,13 +38,14 @@ impl TaxCategory {
             TaxCategory::AE => "AE",
             TaxCategory::Z => "Z",
         }
+        .to_owned()
     }
 }
 
 #[derive(Default)]
 pub struct TaxItem {
-    tax_percent: Decimal,
-    tax_category: TaxCategory,
+    pub(crate) tax_percent: Decimal,
+    pub(crate) tax_category: TaxCategory,
 }
 
 impl TaxItem {
@@ -52,31 +56,36 @@ impl TaxItem {
         }
     }
 
-    pub fn percent(&self) -> Decimal {
-        self.tax_percent
+    pub(crate) fn taxable_amount(&self, taxable_amount: Decimal) -> TaxItemWithTaxableAmount {
+        TaxItemWithTaxableAmount {
+            tax_percent: self.tax_percent,
+            tax_category: self.tax_category,
+            taxable_amount: taxable_amount,
+        }
     }
+}
 
-    pub fn category(&self) -> TaxCategory {
-        self.tax_category
-    }
+pub(crate) struct TaxItemWithTaxableAmount {
+    tax_percent: Decimal,
+    tax_category: TaxCategory,
+    taxable_amount: Decimal,
+}
 
-    pub fn tax_item_tuple(&self) -> (Decimal, TaxCategory) {
-        (self.tax_percent, self.tax_category)
-    }
-
-    pub fn as_xml<'a>(&self, taxable_amount: &Decimal) -> XmlElement<'a> {
-        let tax_amount = taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
+impl ToXml for TaxItemWithTaxableAmount {
+    fn to_xml(&self) -> String {
+        let tax_amount = self.taxable_amount * (self.tax_percent / Decimal::ONE_HUNDRED);
 
         XmlElement::new("TaxItem")
             .with_text_element(
                 "TaxableAmount",
-                taxable_amount.clone_with_scale(2).to_string(),
+                self.taxable_amount.clone_with_scale(2).to_string(),
             )
             .with_element(
-                XmlElement::new("TaxPercent")
-                    .with_attr("TaxCategoryCode", self.tax_category.as_str().to_string())
+                &XmlElement::new("TaxPercent")
+                    .with_attr("TaxCategoryCode", self.tax_category.to_string())
                     .with_text(self.tax_percent.to_string()),
             )
             .with_text_element("TaxAmount", tax_amount.clone_with_scale(2).to_string())
+            .to_xml()
     }
 }

@@ -9,8 +9,8 @@ pub enum DocumentType {
     SubsequentDebit,
 }
 
-impl DocumentType {
-    pub fn as_str(&self) -> &str {
+impl ToString for DocumentType {
+    fn to_string(&self) -> String {
         match self {
             DocumentType::CreditMemo => "CreditMemo",
             DocumentType::FinalSettlement => "FinalSettlement",
@@ -21,5 +21,6 @@ impl DocumentType {
             DocumentType::SubsequentCredit => "SubsequentCredit",
             DocumentType::SubsequentDebit => "SubsequentDebit",
         }
+        .to_owned()
     }
 }

@@ -1,4 +1,4 @@
-use crate::xml::XmlElement;
+use crate::xml::{ToXml, XmlElement};
 
 #[derive(Default)]
 pub struct OrderReference<'a> {
@@ -24,8 +24,10 @@ impl<'a> OrderReference<'a> {
         self.description = Some(description);
         self
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for OrderReference<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("OrderReference").with_text_element("OrderID", self.order_id);
 
         if let Some(d) = self.reference_date {
@@ -36,6 +38,6 @@ impl<'a> OrderReference<'a> {
             e = e.with_text_element("Description", d);
         }
 
-        e
+        e.to_xml()
     }
 }

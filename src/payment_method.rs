@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::xml::XmlElement;
+use crate::xml::{ToXml, XmlElement};
 
 #[derive(Default)]
 enum PaymentMethodType<'a> {
@@ -15,15 +15,15 @@ enum PaymentMethodType<'a> {
     OtherPayment,
 }
 
-impl<'a> PaymentMethodType<'a> {
-    fn as_xml(&self) -> Result<XmlElement<'a>, String> {
+impl ToXml for PaymentMethodType<'_> {
+    fn to_xml(&self) -> String {
         match self {
-            PaymentMethodType::NoPayment => Ok(XmlElement::new("NoPayment")),
-            PaymentMethodType::SEPADirectDebit(p) => p.as_xml(),
-            PaymentMethodType::UniversalBankTransactionBeneficiaryAccount(p) => p.as_xml(),
-            PaymentMethodType::UniversalBankTransaction(p) => p.as_xml(),
-            PaymentMethodType::PaymentCard(p) => p.as_xml(),
-            PaymentMethodType::OtherPayment => Ok(XmlElement::new("OtherPayment")),
+            PaymentMethodType::NoPayment => XmlElement::new("NoPayment").to_xml(),
+            PaymentMethodType::SEPADirectDebit(p) => p.to_xml(),
+            PaymentMethodType::UniversalBankTransactionBeneficiaryAccount(p) => p.to_xml(),
+            PaymentMethodType::UniversalBankTransaction(p) => p.to_xml(),
+            PaymentMethodType::PaymentCard(p) => p.to_xml(),
+            PaymentMethodType::OtherPayment => XmlElement::new("OtherPayment").to_xml(),
         }
     }
 }
@@ -51,106 +51,105 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
         self
     }
 
-    pub fn with_bic(mut self, bic: &'a str) -> Self {
+    pub fn with_bic(mut self, bic: &'a str) -> Result<Self, String> {
+        let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
+        let bic_regex = Regex::new(bic_regex_str).unwrap();
+        if !bic_regex.is_match(bic) {
+            return Err(format!(
+                "BIC {} doesn't match regex {}!",
+                bic, bic_regex_str
+            ));
+        }
         self.bic = Some(bic);
-        self
+        Ok(self)
     }
 
-    pub fn with_iban(mut self, iban: &'a str) -> Self {
+    pub fn with_iban(mut self, iban: &'a str) -> Result<Self, String> {
+        if iban.len() > 34 {
+            return Err(format!("IBAN {} is too long!", iban));
+        }
         self.iban = Some(iban);
-        self
+        Ok(self)
     }
 
-    pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Self {
+    pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Result<Self, String> {
+        if bank_account_owner.len() > 70 {
+            return Err(format!(
+                "BankAccountOwner {} is too long!",
+                bank_account_owner
+            ));
+        }
         self.bank_account_owner = Some(bank_account_owner);
-        self
+        Ok(self)
     }
 
-    pub fn with_creditor_id(mut self, creditor_id: &'a str) -> Self {
+    pub fn with_creditor_id(mut self, creditor_id: &'a str) -> Result<Self, String> {
+        if creditor_id.len() > 35 {
+            return Err(format!("CreditorID {} is too long!", creditor_id));
+        }
         self.creditor_id = Some(creditor_id);
-        self
+        Ok(self)
     }
 
-    pub fn with_mandate_reference(mut self, mandate_reference: &'a str) -> Self {
+    pub fn with_mandate_reference(mut self, mandate_reference: &'a str) -> Result<Self, String> {
+        if mandate_reference.len() > 35 {
+            return Err(format!(
+                "MandateReference {} is too long!",
+                mandate_reference
+            ));
+        }
         self.mandate_reference = Some(mandate_reference);
-        self
+        Ok(self)
     }
 
-    pub fn with_debit_collection_date(mut self, debit_collection_date: &'a str) -> Self {
+    pub fn with_debit_collection_date(
+        mut self,
+        debit_collection_date: &'a str,
+    ) -> Result<Self, String> {
+        let date_regex_str = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
+        let date_regex = Regex::new(date_regex_str).unwrap();
+        if !date_regex.is_match(debit_collection_date) {
+            return Err(format!(
+                "DebitCollectionDate {} doesn't match regex {}!",
+                debit_collection_date, date_regex_str
+            ));
+        }
         self.debit_collection_date = Some(debit_collection_date);
-        self
+        Ok(self)
     }
+}
 
-    fn as_xml(&self) -> Result<XmlElement<'a>, String> {
+impl ToXml for PaymentMethodSEPADirectDebit<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("SEPADirectDebit");
 
         e = e.with_text_element("Type", self.direct_debit_type.unwrap_or("B2C"));
 
         if let Some(bic) = self.bic {
-            let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
-            let bic_regex = Regex::new(bic_regex_str).unwrap();
-            if bic_regex.is_match(bic) {
-                e = e.with_text_element("BIC", bic);
-            } else {
-                return Err(format!(
-                    "BIC {} doesn't match regex {}!",
-                    bic, bic_regex_str
-                ));
-            }
+            e = e.with_text_element("BIC", bic);
         }
 
         if let Some(iban) = self.iban {
-            if iban.len() <= 34 {
-                e = e.with_text_element("IBAN", iban);
-            } else {
-                return Err(format!("IBAN {} is too long!", iban));
-            }
+            e = e.with_text_element("IBAN", iban);
         }
 
         if let Some(bank_account_owner) = self.bank_account_owner {
-            if bank_account_owner.len() <= 70 {
-                e = e.with_text_element("BankAccountOwner", bank_account_owner);
-            } else {
-                return Err(format!(
-                    "BankAccountOwner {} is too long!",
-                    bank_account_owner
-                ));
-            }
+            e = e.with_text_element("BankAccountOwner", bank_account_owner);
         }
 
         if let Some(creditor_id) = self.creditor_id {
-            if creditor_id.len() <= 35 {
-                e = e.with_text_element("CreditorID", creditor_id);
-            } else {
-                return Err(format!("CreditorID {} is too long!", creditor_id));
-            }
+            e = e.with_text_element("CreditorID", creditor_id);
         }
 
         if let Some(mandate_reference) = self.mandate_reference {
-            if mandate_reference.len() <= 35 {
-                e = e.with_text_element("MandateReference", mandate_reference);
-            } else {
-                return Err(format!(
-                    "MandateReference {} is too long!",
-                    mandate_reference
-                ));
-            }
+            e = e.with_text_element("MandateReference", mandate_reference);
         }
 
         if let Some(debit_collection_date) = self.debit_collection_date {
-            let date_regex_str = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
-            let date_regex = Regex::new(date_regex_str).unwrap();
-            if date_regex.is_match(debit_collection_date) {
-                e = e.with_text_element("DebitCollectionDate", debit_collection_date);
-            } else {
-                return Err(format!(
-                    "DebitCollectionDate {} doesn't match regex {}!",
-                    debit_collection_date, date_regex_str
-                ));
-            }
+            e = e.with_text_element("DebitCollectionDate", debit_collection_date);
         }
 
-        Ok(e)
+        e.to_xml()
     }
 }
 
@@ -189,22 +188,39 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
         }
     }
 
-    pub fn with_bank_name(mut self, bank_name: &'a str) -> Self {
+    pub fn with_bank_name(mut self, bank_name: &'a str) -> Result<Self, String> {
+        if bank_name.len() > 255 {
+            return Err(format!("BankName {} is too long!", bank_name));
+        }
         self.bank_name = Some(bank_name);
-        self
+        Ok(self)
     }
 
     pub fn with_bank_code(
         mut self,
         bank_code: PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a>,
-    ) -> Self {
+    ) -> Result<Self, String> {
+        if bank_code.bank_code_type.len() != 2 {
+            return Err(format!(
+                "BankCodeType {} is not 2 characters long!",
+                bank_code.bank_code_type
+            ));
+        }
         self.bank_code = Some(bank_code);
-        self
+        Ok(self)
     }
 
-    pub fn with_bic(mut self, bic: &'a str) -> Self {
+    pub fn with_bic(mut self, bic: &'a str) -> Result<Self, String> {
+        let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
+        let bic_regex = Regex::new(bic_regex_str).unwrap();
+        if !bic_regex.is_match(bic) {
+            return Err(format!(
+                "BIC {} doesn't match regex {}!",
+                bic, bic_regex_str
+            ));
+        }
         self.bic = Some(bic);
-        self
+        Ok(self)
     }
 
     pub fn with_bank_account_number(mut self, bank_account_number: &'a str) -> Self {
@@ -212,53 +228,44 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
         self
     }
 
-    pub fn with_iban(mut self, iban: &'a str) -> Self {
+    pub fn with_iban(mut self, iban: &'a str) -> Result<Self, String> {
+        if iban.len() > 34 {
+            return Err(format!("IBAN {} is too long!", iban));
+        }
         self.iban = Some(iban);
-        self
+        Ok(self)
     }
 
-    pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Self {
+    pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Result<Self, String> {
+        if bank_account_owner.len() > 70 {
+            return Err(format!(
+                "BankAccountOwner {} is too long!",
+                bank_account_owner
+            ));
+        }
         self.bank_account_owner = Some(bank_account_owner);
-        self
+        Ok(self)
     }
+}
 
-    fn as_xml(&self) -> Result<XmlElement<'a>, String> {
+impl ToXml for PaymentMethodUniversalBankTransactionBeneficiaryAccount<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("BeneficiaryAccount");
 
         if let Some(bank_name) = self.bank_name {
-            if bank_name.len() <= 255 {
-                e = e.with_text_element("BankName", bank_name);
-            } else {
-                return Err(format!("BankName {} is too long!", bank_name));
-            }
+            e = e.with_text_element("BankName", bank_name);
         }
 
         if let Some(bank_code) = &self.bank_code {
-            if bank_code.bank_code_type.len() != 2 {
-                return Err(format!(
-                    "BankCodeType {} is not 2 characters long!",
-                    bank_code.bank_code_type
-                ));
-            }
-
             let bank_code_xml_element = XmlElement::new("BankCode")
                 .with_text(format!("{}", bank_code.bank_code))
                 .with_attr("BankCodeType", bank_code.bank_code_type);
 
-            e = e.with_element(bank_code_xml_element);
+            e = e.with_element(&bank_code_xml_element);
         }
 
         if let Some(bic) = self.bic {
-            let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
-            let bic_regex = Regex::new(bic_regex_str).unwrap();
-            if bic_regex.is_match(bic) {
-                e = e.with_text_element("BIC", bic);
-            } else {
-                return Err(format!(
-                    "BIC {} doesn't match regex {}!",
-                    bic, bic_regex_str
-                ));
-            }
+            e = e.with_text_element("BIC", bic);
         }
 
         if let Some(bank_account_number) = self.bank_account_number {
@@ -266,25 +273,14 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
         }
 
         if let Some(iban) = self.iban {
-            if iban.len() <= 34 {
-                e = e.with_text_element("IBAN", iban);
-            } else {
-                return Err(format!("IBAN {} is too long!", iban));
-            }
+            e = e.with_text_element("IBAN", iban);
         }
 
         if let Some(bank_account_owner) = self.bank_account_owner {
-            if bank_account_owner.len() <= 70 {
-                e = e.with_text_element("BankAccountOwner", bank_account_owner);
-            } else {
-                return Err(format!(
-                    "BankAccountOwner {} is too long!",
-                    bank_account_owner
-                ));
-            }
+            e = e.with_text_element("BankAccountOwner", bank_account_owner);
         }
 
-        Ok(e)
+        e.to_xml()
     }
 }
 
@@ -312,22 +308,31 @@ impl<'a> PaymentMethodUniversalBankTransaction<'a> {
         mut self,
         beneficiary_account: PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a>,
     ) -> Self {
-        let beneficiary_accounts = self.beneficiary_account.get_or_insert_with(Vec::new);
-        beneficiary_accounts.push(beneficiary_account);
+        self.beneficiary_account
+            .get_or_insert_with(Vec::new)
+            .push(beneficiary_account);
         self
     }
 
-    pub fn with_payment_reference(mut self, payment_reference: &'a str) -> Self {
+    pub fn with_payment_reference(mut self, payment_reference: &'a str) -> Result<Self, String> {
+        if payment_reference.len() > 35 {
+            return Err(format!(
+                "PaymentReference {} is too long!",
+                payment_reference
+            ));
+        }
         self.payment_reference = Some(payment_reference);
-        self
+        Ok(self)
     }
 
     pub fn with_payment_reference_checksum(mut self, payment_reference_checksum: &'a str) -> Self {
         self.payment_reference_checksum = Some(payment_reference_checksum);
         self
     }
+}
 
-    fn as_xml(&self) -> Result<XmlElement<'a>, String> {
+impl ToXml for PaymentMethodUniversalBankTransaction<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("UniversalBankTransaction");
 
         e = e.with_attr(
@@ -337,33 +342,23 @@ impl<'a> PaymentMethodUniversalBankTransaction<'a> {
 
         if let Some(beneficiary_account) = &self.beneficiary_account {
             for account in beneficiary_account {
-                e = e.with_element(match account.as_xml() {
-                    Ok(e) => e,
-                    Err(e) => return Err(e),
-                });
+                e = e.with_element(account);
             }
         }
 
         if let Some(payment_reference) = self.payment_reference {
-            if payment_reference.len() <= 35 {
-                let mut payment_reference_xml_element =
-                    XmlElement::new("PaymentReference").with_text(payment_reference);
+            let mut payment_reference_xml_element =
+                XmlElement::new("PaymentReference").with_text(payment_reference);
 
-                if let Some(payment_reference_checksum) = self.payment_reference_checksum {
-                    payment_reference_xml_element = payment_reference_xml_element
-                        .with_attr("CheckSum", payment_reference_checksum);
-                }
-
-                e = e.with_element(payment_reference_xml_element);
-            } else {
-                return Err(format!(
-                    "PaymentReference {} is too long!",
-                    payment_reference
-                ));
+            if let Some(payment_reference_checksum) = self.payment_reference_checksum {
+                payment_reference_xml_element =
+                    payment_reference_xml_element.with_attr("CheckSum", payment_reference_checksum);
             }
+
+            e = e.with_element(&payment_reference_xml_element);
         }
 
-        Ok(e)
+        e.to_xml()
     }
 }
 
@@ -375,36 +370,37 @@ pub struct PaymentMethodPaymentCard<'a> {
 }
 
 impl<'a> PaymentMethodPaymentCard<'a> {
-    pub fn new(primary_account_number: &'a str) -> PaymentMethodPaymentCard {
-        PaymentMethodPaymentCard {
+    pub fn new(primary_account_number: &'a str) -> Result<PaymentMethodPaymentCard, String> {
+        let payment_card_regex_str = r"^[0-9]{0,6}\*[0-9]{0,4}$";
+        let payment_card_regex = Regex::new(payment_card_regex_str).unwrap();
+        if !payment_card_regex.is_match(primary_account_number) {
+            return Err(format!(
+                "Invalid primary account number \"{}\". Only provide at most the first 6 and last 4 digits, separated with a \"*\".", primary_account_number
+            ));
+        }
+        Ok(PaymentMethodPaymentCard {
             primary_account_number,
             ..Default::default()
-        }
+        })
     }
 
     pub fn with_card_holder_name(mut self, card_holder_name: &'a str) -> Self {
         self.card_holder_name = Some(card_holder_name);
         self
     }
+}
 
-    fn as_xml(&self) -> Result<XmlElement<'a>, String> {
+impl ToXml for PaymentMethodPaymentCard<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("PaymentCard");
 
-        let payment_card_regex_str = r"^[0-9]{0,6}\*[0-9]{0,4}$";
-        let payment_card_regex = Regex::new(payment_card_regex_str).unwrap();
-        if payment_card_regex.is_match(self.primary_account_number) {
-            e = e.with_text_element("PrimaryAccountNumber", self.primary_account_number);
-        } else {
-            return Err(format!(
-                "Invalid primary account number \"{}\". Only provide at most the first 6 and last 4 digits, separated with a \"*\".", self.primary_account_number
-            ));
-        }
+        e = e.with_text_element("PrimaryAccountNumber", self.primary_account_number);
 
         if let Some(card_holder_name) = self.card_holder_name {
             e = e.with_text_element("CardHolderName", card_holder_name);
         }
 
-        Ok(e)
+        e.to_xml()
     }
 }
 
@@ -469,28 +465,25 @@ impl<'a> PaymentMethod<'a> {
         self.comment = Some(comment);
         self
     }
+}
 
-    pub fn as_xml(&self) -> Result<XmlElement, String> {
+impl ToXml for PaymentMethod<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("PaymentMethod");
 
         if let Some(comment) = self.comment {
             e = e.with_text_element("Comment", comment);
         }
 
-        match self.method.as_xml() {
-            Ok(pmt) => {
-                e = e.with_element(pmt);
-            }
-            Err(e) => return Err(e),
-        }
+        e = e.with_element(&self.method);
 
-        Ok(e)
+        e.to_xml()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::xml::XmlToString;
+    use crate::xml::ToXml;
 
     use super::*;
 
@@ -500,9 +493,7 @@ mod tests {
             PaymentMethod {
                 ..Default::default()
             }
-            .as_xml()
-            .unwrap()
-            .to_string(),
+            .to_xml(),
             "<PaymentMethod><NoPayment></NoPayment></PaymentMethod>"
         )
     }
@@ -510,7 +501,7 @@ mod tests {
     #[test]
     fn no_payment() {
         assert_eq!(
-            PaymentMethod::no_payment().as_xml().unwrap().to_string(),
+            PaymentMethod::no_payment().to_xml(),
             "<PaymentMethod><NoPayment></NoPayment></PaymentMethod>"
         )
     }
@@ -528,9 +519,7 @@ mod tests {
                 debit_collection_date: Some("2020-01-01"),
                 ..Default::default()
             })
-            .as_xml()
-            .unwrap()
-            .to_string(),
+            .to_xml(),
             "<PaymentMethod><SEPADirectDebit><Type>B2B</Type><BIC>BKAUATWW</BIC><IBAN>AT491200011111111111</IBAN><BankAccountOwner>Test</BankAccountOwner><CreditorID>AT12ZZZ00000000001</CreditorID><MandateReference>123</MandateReference><DebitCollectionDate>2020-01-01</DebitCollectionDate></SEPADirectDebit></PaymentMethod>"
         )
     }
@@ -554,9 +543,7 @@ mod tests {
                 payment_reference: Some("123456789012"),
                 payment_reference_checksum: Some("X"),
             })
-            .as_xml()
-            .unwrap()
-            .to_string(),
+            .to_xml(),
             "<PaymentMethod><UniversalBankTransaction ConsolidatorPayable=\"true\"><BeneficiaryAccount><BankName>Bank</BankName><BankCode BankCodeType=\"AT\">12000</BankCode><BIC>BKAUATWW</BIC><BankAccountNr>11111111111</BankAccountNr><IBAN>AT491200011111111111</IBAN><BankAccountOwner>Name</BankAccountOwner></BeneficiaryAccount><PaymentReference CheckSum=\"X\">123456789012</PaymentReference></UniversalBankTransaction></PaymentMethod>"
         )
     }
@@ -568,9 +555,7 @@ mod tests {
                 primary_account_number: "123456*4321",
                 card_holder_name: Some("Name"),
             })
-            .as_xml()
-            .unwrap()
-            .to_string(),
+            .to_xml(),
             "<PaymentMethod><PaymentCard><PrimaryAccountNumber>123456*4321</PrimaryAccountNumber><CardHolderName>Name</CardHolderName></PaymentCard></PaymentMethod>"
         )
     }
@@ -578,7 +563,7 @@ mod tests {
     #[test]
     fn other_payment() {
         assert_eq!(
-            PaymentMethod::other_payment().as_xml().unwrap().to_string(),
+            PaymentMethod::other_payment().to_xml(),
             "<PaymentMethod><OtherPayment></OtherPayment></PaymentMethod>"
         )
     }

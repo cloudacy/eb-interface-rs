@@ -1,6 +1,9 @@
 use crate::{
-    address::Address, contact::Contact, identification::FurtherIdentification,
-    order_reference::OrderReference, xml::XmlElement,
+    address::Address,
+    contact::Contact,
+    identification::FurtherIdentification,
+    order_reference::OrderReference,
+    xml::{ToXml, XmlElement},
 };
 
 #[derive(Default)]
@@ -24,8 +27,9 @@ impl<'a> InvoiceRecipient<'a> {
         mut self,
         further_identification: FurtherIdentification<'a>,
     ) -> Self {
-        let fi = self.further_identification.get_or_insert_with(Vec::new);
-        fi.push(further_identification);
+        self.further_identification
+            .get_or_insert_with(Vec::new)
+            .push(further_identification);
         self
     }
 
@@ -43,29 +47,31 @@ impl<'a> InvoiceRecipient<'a> {
         self.contact = Some(contact);
         self
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for InvoiceRecipient<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("InvoiceRecipient")
             .with_text_element("VATIdentificationNumber", self.vat_identification_number);
 
         if let Some(fis) = &self.further_identification {
             for fi in fis {
-                e = e.with_element(fi.as_xml());
+                e = e.with_element(fi);
             }
         }
 
         if let Some(or) = &self.order_reference {
-            e = e.with_element(or.as_xml());
+            e = e.with_element(or);
         }
 
         if let Some(a) = &self.address {
-            e = e.with_element(a.as_xml());
+            e = e.with_element(a);
         }
 
         if let Some(c) = &self.contact {
-            e = e.with_element(c.as_xml());
+            e = e.with_element(c);
         }
 
-        e
+        e.to_xml()
     }
 }

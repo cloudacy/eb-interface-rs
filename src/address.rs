@@ -1,4 +1,4 @@
-use crate::xml::XmlElement;
+use crate::xml::{ToXml, XmlElement};
 
 #[derive(Default)]
 pub struct Address<'a> {
@@ -34,18 +34,18 @@ impl<'a> Address<'a> {
     }
 
     pub fn with_phone(mut self, phone_number: &'a str) -> Self {
-        let phone_numbers = self.phone.get_or_insert_with(Vec::new);
-        phone_numbers.push(phone_number);
+        self.phone.get_or_insert_with(Vec::new).push(phone_number);
         self
     }
 
     pub fn with_email(mut self, email_address: &'a str) -> Self {
-        let email_addresses = self.email.get_or_insert_with(Vec::new);
-        email_addresses.push(email_address);
+        self.email.get_or_insert_with(Vec::new).push(email_address);
         self
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for Address<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("Address").with_text_element("Name", self.name);
 
         if let Some(s) = self.street {
@@ -60,7 +60,7 @@ impl<'a> Address<'a> {
         if let Some(cc) = self.country_code {
             ce = ce.with_attr("CountryCode", cc);
         }
-        e = e.with_element(ce);
+        e = e.with_element(&ce);
 
         if let Some(phone_numbers) = &self.phone {
             for phone_number in phone_numbers {
@@ -74,6 +74,6 @@ impl<'a> Address<'a> {
             }
         }
 
-        e
+        e.to_xml()
     }
 }

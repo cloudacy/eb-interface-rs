@@ -5,8 +5,8 @@ use crate::{
     reduction_and_surcharge::{
         ReductionAndSurchargeListLineItemDetails, ReductionListLineItem, SurchargeListLineItem,
     },
-    tax::{TaxCategory, TaxItem},
-    xml::XmlElement,
+    tax::TaxItem,
+    xml::{ToXml, XmlElement},
 };
 
 #[derive(Default)]
@@ -18,7 +18,7 @@ pub struct DetailsItem<'a> {
     unit_price: Decimal,
     base_quantity: Option<Decimal>,
     reduction_and_surcharge: Option<ReductionAndSurchargeListLineItemDetails<'a>>,
-    tax_item: TaxItem,
+    pub(crate) tax_item: TaxItem,
 }
 
 impl<'a> DetailsItem<'a> {
@@ -72,11 +72,7 @@ impl<'a> DetailsItem<'a> {
         self
     }
 
-    pub fn tax_item_tuple(&self) -> (Decimal, TaxCategory) {
-        self.tax_item.tax_item_tuple()
-    }
-
-    pub fn line_item_amount(&self) -> Decimal {
+    pub(crate) fn line_item_amount(&self) -> Decimal {
         let base_quantity = self.base_quantity.unwrap_or(Decimal::ONE);
 
         let reduction_and_surcharge_sum = match &self.reduction_and_surcharge {
@@ -89,12 +85,14 @@ impl<'a> DetailsItem<'a> {
         /* + sum of other_vat_able_tax_list_line_item.tax_amount */
     }
 
-    pub fn line_item_total_gross_amount(&self) -> Decimal {
+    pub(crate) fn line_item_total_gross_amount(&self) -> Decimal {
         self.line_item_amount()
-            * ((self.tax_item.percent() + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
+            * ((self.tax_item.tax_percent + Decimal::ONE_HUNDRED) / Decimal::ONE_HUNDRED)
     }
+}
 
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for DetailsItem<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("ListLineItem");
 
         // PositionNumber.
@@ -109,7 +107,7 @@ impl<'a> DetailsItem<'a> {
 
         // Quantity.
         e = e.with_element(
-            XmlElement::new("Quantity")
+            &XmlElement::new("Quantity")
                 .with_attr("Unit", self.unit)
                 .with_text(self.quantity.clone_with_scale(4).to_string()),
         );
@@ -120,42 +118,42 @@ impl<'a> DetailsItem<'a> {
         if let Some(bq) = &self.base_quantity {
             up = up.with_attr("BaseQuantity", bq.to_string())
         }
-        e = e.with_element(up);
+        e = e.with_element(&up);
 
         // ReductionListLineItem(s) and SurchargeListLineItem(s).
         let mut reduction_and_surcharge_sum = Decimal::ZERO;
         if let Some(reduction_and_surcharge) = &self.reduction_and_surcharge {
             reduction_and_surcharge_sum = reduction_and_surcharge.sum();
-            e = e.with_element(reduction_and_surcharge.as_xml());
+            e = e.with_element(reduction_and_surcharge);
         }
 
         // TaxItem.
         let taxable_amount = self.quantity * self.unit_price + reduction_and_surcharge_sum;
-        e = e.with_element(self.tax_item.as_xml(&taxable_amount));
+        e = e.with_element(&self.tax_item.taxable_amount(taxable_amount));
 
         // LineItemAmount.
         e = e.with_text_element("LineItemAmount", self.line_item_amount().to_string());
 
-        e
+        e.to_xml()
     }
 }
 
 #[derive(Default)]
-pub struct Details<'a> {
-    pub items: Vec<DetailsItem<'a>>,
+pub(crate) struct Details<'a> {
+    pub(crate) items: Vec<DetailsItem<'a>>,
 }
 
-impl Details<'_> {
-    pub fn as_xml(&self) -> XmlElement {
+impl ToXml for Details<'_> {
+    fn to_xml(&self) -> String {
         let mut e = XmlElement::new("Details");
 
         let mut ie = XmlElement::new("ItemList");
         for item in &self.items {
-            ie = ie.with_element(item.as_xml());
+            ie = ie.with_element(item);
         }
-        e = e.with_element(ie);
+        e = e.with_element(&ie);
 
-        e
+        e.to_xml()
     }
 }
 
@@ -167,7 +165,7 @@ mod tests {
     use crate::{
         reduction_and_surcharge::{ReductionAndSurchargeValue, SurchargeListLineItem},
         tax::TaxCategory,
-        xml::XmlToString,
+        xml::ToXml,
     };
 
     #[test]
@@ -182,8 +180,7 @@ mod tests {
             TaxItem::new(dec!(20), TaxCategory::S),
         )
         .with_description("Sand")
-        .as_xml()
-        .to_string();
+        .to_xml();
 
         assert_eq!(
             result,
@@ -203,8 +200,7 @@ mod tests {
             TaxItem::new(dec!(20), TaxCategory::S),
         )
         .with_description("Sand")
-        .as_xml()
-        .to_string();
+        .to_xml();
 
         assert_eq!(
             result,
@@ -225,8 +221,7 @@ mod tests {
             dec!(5),
             ReductionAndSurchargeValue::Amount(dec!(2.3399)),
         ))
-        .as_xml()
-        .to_string();
+        .to_xml();
 
         assert_eq!(
             result,
@@ -247,8 +242,7 @@ mod tests {
             dec!(5),
             ReductionAndSurchargeValue::Amount(dec!(2)),
         ))
-        .as_xml()
-        .to_string();
+        .to_xml();
 
         assert_eq!(
             result,
@@ -268,8 +262,7 @@ mod tests {
             TaxItem::new(dec!(20), TaxCategory::S),
         )
         .with_description("Sand")
-        .as_xml()
-        .to_string();
+        .to_xml();
 
         assert_eq!(
             result.as_str(),
