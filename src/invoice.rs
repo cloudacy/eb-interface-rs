@@ -150,7 +150,46 @@ impl<'a> Invoice<'a> {
 mod tests {
     use rust_decimal_macros::dec;
 
+    use crate::payment_method::PaymentMethodPaymentCard;
+
     use super::*;
+
+    #[test]
+    fn readme_example() {
+        let invoice = Invoice::new(
+            "test",
+            "EUR",
+            "993433000298",
+            "2020-01-01",
+            Biller::new("ATU51507409"),
+            InvoiceRecipient::new("ATU18708634"),
+        )
+        .with_item(
+            DetailsItem::new(
+                dec!(100),
+                "STK",
+                dec!(10.20),
+                TaxItem::new(dec!(20), TaxCategory::S),
+            )
+            .with_description("Schraubenzieher"),
+        )
+        .with_document_title("An invoice")
+        .with_language("de")
+        .with_payment_method(
+            PaymentMethod::payment_card(
+                PaymentMethodPaymentCard::new("123456*4321")
+                    .unwrap()
+                    .with_card_holder_name("Name"),
+            )
+            .with_comment("Comment"),
+        )
+        .to_xml();
+
+        assert_eq!(
+            invoice,
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice xmlns=\"http://www.ebinterface.at/schema/6p1/\" GeneratingSystem=\"test\" DocumentType=\"Invoice\" InvoiceCurrency=\"EUR\" DocumentTitle=\"An invoice\" Language=\"de\"><InvoiceNumber>993433000298</InvoiceNumber><InvoiceDate>2020-01-01</InvoiceDate><Biller><VATIdentificationNumber>ATU51507409</VATIdentificationNumber></Biller><InvoiceRecipient><VATIdentificationNumber>ATU18708634</VATIdentificationNumber></InvoiceRecipient><Details><ItemList><ListLineItem><Description>Schraubenzieher</Description><Quantity Unit=\"STK\">100.0000</Quantity><UnitPrice>10.2000</UnitPrice><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem><LineItemAmount>1020.00</LineItemAmount></ListLineItem></ItemList></Details><Tax><TaxItem><TaxableAmount>1020.00</TaxableAmount><TaxPercent TaxCategoryCode=\"S\">20</TaxPercent><TaxAmount>204.00</TaxAmount></TaxItem></Tax><TotalGrossAmount>1224.00</TotalGrossAmount><PayableAmount>1224.00</PayableAmount><PaymentMethod><Comment>Comment</Comment><PaymentCard><PrimaryAccountNumber>123456*4321</PrimaryAccountNumber><CardHolderName>Name</CardHolderName></PaymentCard></PaymentMethod></Invoice>",
+        )
+    }
 
     #[test]
     fn correctly_calculates_tax() {
