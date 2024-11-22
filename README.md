@@ -35,18 +35,19 @@ Invoice::new(
         dec!(10.20),
         TaxItem::new(dec!(20), TaxCategory::S),
     )
-    .with_description("Schraubenzieher")
+    .with_description("Schraubenzieher"),
 )
 .with_document_title("An invoice")
 .with_language("de")
 .with_payment_method(
     PaymentMethod::payment_card(
-        PaymentMethodPaymentCard::new("123456*4321").with_card_holder_name("Name"),
+        PaymentMethodPaymentCard::new("123456*4321")
+            .unwrap()
+            .with_card_holder_name("Name"),
     )
     .with_comment("Comment"),
 )
-.to_xml_string()
-.unwrap(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
+.to_xml(); // returns "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Invoice>...</Invoice>"
 ```
 
 ## Development
