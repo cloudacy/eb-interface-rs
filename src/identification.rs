@@ -18,25 +18,28 @@ pub enum FurtherIdentificationType {
     VN,
 }
 
-impl ToString for FurtherIdentificationType {
-    fn to_string(&self) -> String {
-        match self {
-            FurtherIdentificationType::ARA => "ARA",
-            FurtherIdentificationType::BBG_GZ => "BBG_GZ",
-            FurtherIdentificationType::Consolidator => "Consolidator",
-            FurtherIdentificationType::Contract => "Contract",
-            FurtherIdentificationType::DVR => "DVR",
-            FurtherIdentificationType::EORI => "EORI",
-            FurtherIdentificationType::ERSB => "ERSB",
-            FurtherIdentificationType::FN => "FN",
-            FurtherIdentificationType::FR => "FR",
-            FurtherIdentificationType::HG => "HG",
-            FurtherIdentificationType::Payer => "Payer",
-            FurtherIdentificationType::FASTNR => "FASTNR",
-            FurtherIdentificationType::VID => "VID",
-            FurtherIdentificationType::VN => "VN",
-        }
-        .to_owned()
+impl std::fmt::Display for FurtherIdentificationType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                FurtherIdentificationType::ARA => "ARA",
+                FurtherIdentificationType::BBG_GZ => "BBG_GZ",
+                FurtherIdentificationType::Consolidator => "Consolidator",
+                FurtherIdentificationType::Contract => "Contract",
+                FurtherIdentificationType::DVR => "DVR",
+                FurtherIdentificationType::EORI => "EORI",
+                FurtherIdentificationType::ERSB => "ERSB",
+                FurtherIdentificationType::FN => "FN",
+                FurtherIdentificationType::FR => "FR",
+                FurtherIdentificationType::HG => "HG",
+                FurtherIdentificationType::Payer => "Payer",
+                FurtherIdentificationType::FASTNR => "FASTNR",
+                FurtherIdentificationType::VID => "VID",
+                FurtherIdentificationType::VN => "VN",
+            }
+        )
     }
 }
 

@@ -22,23 +22,26 @@ pub enum TaxCategory {
     Z,
 }
 
-impl ToString for TaxCategory {
-    fn to_string(&self) -> String {
-        match self {
-            TaxCategory::S => "S",
-            TaxCategory::AA => "AA",
-            TaxCategory::O => "O",
-            TaxCategory::D => "D",
-            TaxCategory::E => "E",
-            TaxCategory::F => "F",
-            TaxCategory::G => "G",
-            TaxCategory::I => "I",
-            TaxCategory::J => "J",
-            TaxCategory::K => "K",
-            TaxCategory::AE => "AE",
-            TaxCategory::Z => "Z",
-        }
-        .to_owned()
+impl std::fmt::Display for TaxCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                TaxCategory::S => "S",
+                TaxCategory::AA => "AA",
+                TaxCategory::O => "O",
+                TaxCategory::D => "D",
+                TaxCategory::E => "E",
+                TaxCategory::F => "F",
+                TaxCategory::G => "G",
+                TaxCategory::I => "I",
+                TaxCategory::J => "J",
+                TaxCategory::K => "K",
+                TaxCategory::AE => "AE",
+                TaxCategory::Z => "Z",
+            }
+        )
     }
 }
 
@@ -60,7 +63,7 @@ impl TaxItem {
         TaxItemWithTaxableAmount {
             tax_percent: self.tax_percent,
             tax_category: self.tax_category,
-            taxable_amount: taxable_amount,
+            taxable_amount,
         }
     }
 }

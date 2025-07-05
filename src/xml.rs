@@ -32,9 +32,10 @@ struct XmlText<'a> {
 }
 
 impl XmlText<'_> {
-    fn to_xml(&mut self) -> String {
-        xml_escape(&mut self.text);
-        self.text.to_string()
+    fn to_xml(&self) -> String {
+        let mut text = self.text.clone();
+        xml_escape(&mut text);
+        text.to_string()
     }
 }
 
@@ -44,10 +45,12 @@ struct XmlAttribute<'a> {
 }
 
 impl XmlAttribute<'_> {
-    fn to_xml(&mut self) -> String {
-        xml_escape(&mut self.name);
-        xml_escape(&mut self.value);
-        format!("{}=\"{}\"", self.name, self.value)
+    fn to_xml(&self) -> String {
+        let mut name = self.name.clone();
+        let mut value = self.value.clone();
+        xml_escape(&mut name);
+        xml_escape(&mut value);
+        format!("{name}=\"{value}\"")
     }
 }
 
@@ -81,7 +84,7 @@ impl XmlElement {
         self
     }
 
-    pub(crate) fn with_element<'a>(mut self, element: &'a impl ToXml) -> Self {
+    pub(crate) fn with_element(mut self, element: &impl ToXml) -> Self {
         self.body.push(element.to_xml());
         self
     }
@@ -94,10 +97,12 @@ impl XmlElement {
         self.body.push(
             XmlElement {
                 name: name.to_owned(),
-                body: vec![XmlText {
-                    text: Cow::from(text.as_ref()),
-                }
-                .to_xml()],
+                body: vec![
+                    XmlText {
+                        text: Cow::from(text.as_ref()),
+                    }
+                    .to_xml(),
+                ],
                 ..Default::default()
             }
             .to_xml(),

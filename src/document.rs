@@ -9,18 +9,21 @@ pub enum DocumentType {
     SubsequentDebit,
 }
 
-impl ToString for DocumentType {
-    fn to_string(&self) -> String {
-        match self {
-            DocumentType::CreditMemo => "CreditMemo",
-            DocumentType::FinalSettlement => "FinalSettlement",
-            DocumentType::Invoice => "Invoice",
-            DocumentType::InvoiceForAdvancePayment => "InvoiceForAdvancePayment",
-            DocumentType::InvoiceForPartialDelivery => "InvoiceForPartialDelivery",
-            DocumentType::SelfBilling => "SelfBilling",
-            DocumentType::SubsequentCredit => "SubsequentCredit",
-            DocumentType::SubsequentDebit => "SubsequentDebit",
-        }
-        .to_owned()
+impl std::fmt::Display for DocumentType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                DocumentType::CreditMemo => "CreditMemo",
+                DocumentType::FinalSettlement => "FinalSettlement",
+                DocumentType::Invoice => "Invoice",
+                DocumentType::InvoiceForAdvancePayment => "InvoiceForAdvancePayment",
+                DocumentType::InvoiceForPartialDelivery => "InvoiceForPartialDelivery",
+                DocumentType::SelfBilling => "SelfBilling",
+                DocumentType::SubsequentCredit => "SubsequentCredit",
+                DocumentType::SubsequentDebit => "SubsequentDebit",
+            }
+        )
     }
 }

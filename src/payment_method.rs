@@ -55,10 +55,7 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
         let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
         let bic_regex = Regex::new(bic_regex_str).unwrap();
         if !bic_regex.is_match(bic) {
-            return Err(format!(
-                "BIC {} doesn't match regex {}!",
-                bic, bic_regex_str
-            ));
+            return Err(format!("BIC {bic} doesn't match regex {bic_regex_str}!"));
         }
         self.bic = Some(bic);
         Ok(self)
@@ -66,7 +63,7 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
 
     pub fn with_iban(mut self, iban: &'a str) -> Result<Self, String> {
         if iban.len() > 34 {
-            return Err(format!("IBAN {} is too long!", iban));
+            return Err(format!("IBAN {iban} is too long!"));
         }
         self.iban = Some(iban);
         Ok(self)
@@ -75,8 +72,7 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
     pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Result<Self, String> {
         if bank_account_owner.len() > 70 {
             return Err(format!(
-                "BankAccountOwner {} is too long!",
-                bank_account_owner
+                "BankAccountOwner {bank_account_owner} is too long!"
             ));
         }
         self.bank_account_owner = Some(bank_account_owner);
@@ -85,7 +81,7 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
 
     pub fn with_creditor_id(mut self, creditor_id: &'a str) -> Result<Self, String> {
         if creditor_id.len() > 35 {
-            return Err(format!("CreditorID {} is too long!", creditor_id));
+            return Err(format!("CreditorID {creditor_id} is too long!"));
         }
         self.creditor_id = Some(creditor_id);
         Ok(self)
@@ -93,10 +89,7 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
 
     pub fn with_mandate_reference(mut self, mandate_reference: &'a str) -> Result<Self, String> {
         if mandate_reference.len() > 35 {
-            return Err(format!(
-                "MandateReference {} is too long!",
-                mandate_reference
-            ));
+            return Err(format!("MandateReference {mandate_reference} is too long!"));
         }
         self.mandate_reference = Some(mandate_reference);
         Ok(self)
@@ -110,8 +103,7 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
         let date_regex = Regex::new(date_regex_str).unwrap();
         if !date_regex.is_match(debit_collection_date) {
             return Err(format!(
-                "DebitCollectionDate {} doesn't match regex {}!",
-                debit_collection_date, date_regex_str
+                "DebitCollectionDate {debit_collection_date} doesn't match regex {date_regex_str}!"
             ));
         }
         self.debit_collection_date = Some(debit_collection_date);
@@ -190,7 +182,7 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
 
     pub fn with_bank_name(mut self, bank_name: &'a str) -> Result<Self, String> {
         if bank_name.len() > 255 {
-            return Err(format!("BankName {} is too long!", bank_name));
+            return Err(format!("BankName {bank_name} is too long!"));
         }
         self.bank_name = Some(bank_name);
         Ok(self)
@@ -214,10 +206,7 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
         let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
         let bic_regex = Regex::new(bic_regex_str).unwrap();
         if !bic_regex.is_match(bic) {
-            return Err(format!(
-                "BIC {} doesn't match regex {}!",
-                bic, bic_regex_str
-            ));
+            return Err(format!("BIC {bic} doesn't match regex {bic_regex_str}!"));
         }
         self.bic = Some(bic);
         Ok(self)
@@ -230,7 +219,7 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
 
     pub fn with_iban(mut self, iban: &'a str) -> Result<Self, String> {
         if iban.len() > 34 {
-            return Err(format!("IBAN {} is too long!", iban));
+            return Err(format!("IBAN {iban} is too long!"));
         }
         self.iban = Some(iban);
         Ok(self)
@@ -239,8 +228,7 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
     pub fn with_bank_account_owner(mut self, bank_account_owner: &'a str) -> Result<Self, String> {
         if bank_account_owner.len() > 70 {
             return Err(format!(
-                "BankAccountOwner {} is too long!",
-                bank_account_owner
+                "BankAccountOwner {bank_account_owner} is too long!"
             ));
         }
         self.bank_account_owner = Some(bank_account_owner);
@@ -316,10 +304,7 @@ impl<'a> PaymentMethodUniversalBankTransaction<'a> {
 
     pub fn with_payment_reference(mut self, payment_reference: &'a str) -> Result<Self, String> {
         if payment_reference.len() > 35 {
-            return Err(format!(
-                "PaymentReference {} is too long!",
-                payment_reference
-            ));
+            return Err(format!("PaymentReference {payment_reference} is too long!"));
         }
         self.payment_reference = Some(payment_reference);
         Ok(self)
@@ -370,12 +355,12 @@ pub struct PaymentMethodPaymentCard<'a> {
 }
 
 impl<'a> PaymentMethodPaymentCard<'a> {
-    pub fn new(primary_account_number: &'a str) -> Result<PaymentMethodPaymentCard, String> {
+    pub fn new(primary_account_number: &'a str) -> Result<PaymentMethodPaymentCard<'a>, String> {
         let payment_card_regex_str = r"^[0-9]{0,6}\*[0-9]{0,4}$";
         let payment_card_regex = Regex::new(payment_card_regex_str).unwrap();
         if !payment_card_regex.is_match(primary_account_number) {
             return Err(format!(
-                "Invalid primary account number \"{}\". Only provide at most the first 6 and last 4 digits, separated with a \"*\".", primary_account_number
+                "Invalid primary account number \"{primary_account_number}\". Only provide at most the first 6 and last 4 digits, separated with a \"*\".",
             ));
         }
         Ok(PaymentMethodPaymentCard {
@@ -529,17 +514,21 @@ mod tests {
         assert_eq!(
             PaymentMethod::universal_bank_transaction(PaymentMethodUniversalBankTransaction {
                 consolidator_payable: Some(true),
-                beneficiary_account: Some(vec![PaymentMethodUniversalBankTransactionBeneficiaryAccount {
-                    bank_name: Some("Bank"),
-                    bank_code: Some(PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode {
-                        bank_code: 12000,
-                        bank_code_type: "AT",
-                    }),
-                    bic: Some("BKAUATWW"),
-                    bank_account_number: Some("11111111111"),
-                    iban: Some("AT491200011111111111"),
-                    bank_account_owner: Some("Name"),
-                }]),
+                beneficiary_account: Some(vec![
+                    PaymentMethodUniversalBankTransactionBeneficiaryAccount {
+                        bank_name: Some("Bank"),
+                        bank_code: Some(
+                            PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode {
+                                bank_code: 12000,
+                                bank_code_type: "AT",
+                            }
+                        ),
+                        bic: Some("BKAUATWW"),
+                        bank_account_number: Some("11111111111"),
+                        iban: Some("AT491200011111111111"),
+                        bank_account_owner: Some("Name"),
+                    }
+                ]),
                 payment_reference: Some("123456789012"),
                 payment_reference_checksum: Some("X"),
             })

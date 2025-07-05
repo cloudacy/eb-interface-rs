@@ -27,7 +27,7 @@ impl<'a> DetailsItem<'a> {
         unit: &'a str,
         unit_price: Decimal,
         tax_item: TaxItem,
-    ) -> DetailsItem {
+    ) -> DetailsItem<'a> {
         DetailsItem {
             quantity,
             unit,
