@@ -9,6 +9,11 @@ include = ["src/", "LICENSE", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = [
+  "benches",
+]
+
 [dependencies]
 regex = { version = "1.11.1", default-features = false, features = [] }
 rust_decimal = { version = "1.37.2", default-features = false, features = [] }

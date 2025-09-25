@@ -1,0 +1,16 @@
+[package]
+name = "benches"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5.1", default-features = false, features = [] }
+eb_interface_rs = { path = "..", default-features = false, features = [] }
+rust_decimal = { version = "1.37.2", default-features = false, features = [] }
+
+[[bench]]
+name = "invoice_to_xml"
+harness = false
