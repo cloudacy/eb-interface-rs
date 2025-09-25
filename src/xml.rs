@@ -26,10 +26,9 @@ struct XmlText<'a> {
 }
 
 impl XmlText<'_> {
-    fn to_xml(&self) -> String {
-        let mut text = self.text.clone();
-        xml_escape(&mut text);
-        text.to_string()
+    fn to_xml(&mut self) -> String {
+        xml_escape(&mut self.text);
+        self.text.to_string()
     }
 }
 
@@ -39,12 +38,10 @@ struct XmlAttribute<'a> {
 }
 
 impl XmlAttribute<'_> {
-    fn to_xml(&self) -> String {
-        let mut name = self.name.clone();
-        let mut value = self.value.clone();
-        xml_escape(&mut name);
-        xml_escape(&mut value);
-        format!("{name}=\"{value}\"")
+    fn to_xml(&mut self) -> String {
+        xml_escape(&mut self.name);
+        xml_escape(&mut self.value);
+        format!("{}=\"{}\"", &self.name, &self.value)
     }
 }
 
