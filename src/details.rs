@@ -160,7 +160,6 @@ impl ToXml for Details<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal_macros::dec;
 
     use crate::{
         reduction_and_surcharge::{ReductionAndSurchargeValue, SurchargeListLineItem},
@@ -170,14 +169,14 @@ mod tests {
 
     #[test]
     fn rounds_line_item_amount_result_after_calculation() {
-        let quantity = dec!(0.005);
-        let unit_price = dec!(0.005);
+        let quantity = Decimal::new(5, 3);
+        let unit_price = Decimal::new(5, 3);
 
         let result = DetailsItem::new(
             quantity,
             "KGM",
             unit_price,
-            TaxItem::new(dec!(20), TaxCategory::S),
+            TaxItem::new(Decimal::from(20), TaxCategory::S),
         )
         .with_description("Sand")
         .to_xml();
@@ -190,14 +189,14 @@ mod tests {
 
     #[test]
     fn rounds_correctly_up() {
-        let quantity = dec!(100.123456);
-        let unit_price = dec!(10.20005);
+        let quantity = Decimal::new(100123456, 6);
+        let unit_price = Decimal::new(1020005, 5);
 
         let result = DetailsItem::new(
             quantity,
             "KGM",
             unit_price,
-            TaxItem::new(dec!(20), TaxCategory::S),
+            TaxItem::new(Decimal::from(20), TaxCategory::S),
         )
         .with_description("Sand")
         .to_xml();
@@ -211,15 +210,15 @@ mod tests {
     #[test]
     fn calculates_reduction_correctly() {
         let result = DetailsItem::new(
-            dec!(1),
+            Decimal::from(1),
             "STK",
-            dec!(5.00),
-            TaxItem::new(dec!(10), TaxCategory::AA),
+            Decimal::from(5),
+            TaxItem::new(Decimal::from(10), TaxCategory::AA),
         )
         .with_description("Handbuch zur Schraube")
         .with_reduction(ReductionListLineItem::new(
-            dec!(5),
-            ReductionAndSurchargeValue::Amount(dec!(2.3399)),
+            Decimal::from(5),
+            ReductionAndSurchargeValue::Amount(Decimal::new(23399, 4)),
         ))
         .to_xml();
 
@@ -232,15 +231,15 @@ mod tests {
     #[test]
     fn calculates_surcharge_correctly() {
         let result = DetailsItem::new(
-            dec!(1),
+            Decimal::from(1),
             "STK",
-            dec!(5.00),
-            TaxItem::new(dec!(10), TaxCategory::AA),
+            Decimal::from(5),
+            TaxItem::new(Decimal::from(10), TaxCategory::AA),
         )
         .with_description("Handbuch zur Schraube")
         .with_surcharge(SurchargeListLineItem::new(
-            dec!(5),
-            ReductionAndSurchargeValue::Amount(dec!(2)),
+            Decimal::from(5),
+            ReductionAndSurchargeValue::Amount(Decimal::from(2)),
         ))
         .to_xml();
 
@@ -252,14 +251,14 @@ mod tests {
 
     #[test]
     fn rounds_correctly_down() {
-        let quantity = dec!(100.12344);
-        let unit_price = dec!(10.20001);
+        let quantity = Decimal::new(10012344, 5);
+        let unit_price = Decimal::new(1020001, 5);
 
         let result = DetailsItem::new(
             quantity,
             "KGM",
             unit_price,
-            TaxItem::new(dec!(20), TaxCategory::S),
+            TaxItem::new(Decimal::from(20), TaxCategory::S),
         )
         .with_description("Sand")
         .to_xml();

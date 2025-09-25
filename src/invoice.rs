@@ -148,11 +148,9 @@ impl<'a> Invoice<'a> {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal_macros::dec;
+    use super::*;
 
     use crate::payment_method::PaymentMethodPaymentCard;
-
-    use super::*;
 
     #[test]
     fn readme_example() {
@@ -166,10 +164,10 @@ mod tests {
         )
         .with_item(
             DetailsItem::new(
-                dec!(100),
+                Decimal::from(100),
                 "STK",
-                dec!(10.20),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(1020, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             )
             .with_description("Schraubenzieher"),
         )
@@ -203,39 +201,42 @@ mod tests {
         )
         .with_items(vec![
             DetailsItem::new(
-                dec!(5.19),
+                Decimal::new(519, 2),
                 "h",
-                dec!(106.23),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(10623, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             ),
             DetailsItem::new(
-                dec!(3.2),
+                Decimal::new(32, 1),
                 "h",
-                dec!(106.23),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(10623, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             ),
             DetailsItem::new(
-                dec!(3.00),
+                Decimal::from(3),
                 "h",
-                dec!(106.23),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(10623, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             ),
             DetailsItem::new(
-                dec!(0.84),
+                Decimal::new(84, 2),
                 "h",
-                dec!(106.23),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(10623, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             ),
             DetailsItem::new(
-                dec!(14.62),
+                Decimal::new(1462, 2),
                 "h",
-                dec!(106.23),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(10623, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             ),
         ]);
 
         let tax_items = invoice.invoice_tax_items();
 
-        assert_eq!(tax_items.first().map_or(dec!(0), |i| i.1), dec!(2852.27))
+        assert_eq!(
+            tax_items.first().map_or(Decimal::from(0), |i| i.1),
+            Decimal::new(285227, 2)
+        )
     }
 }

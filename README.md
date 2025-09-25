@@ -30,10 +30,10 @@ Invoice::new(
 )
 .with_item(
     DetailsItem::new(
-        dec!(100),
+        Decimal::from(100),
         "STK",
-        dec!(10.20),
-        TaxItem::new(dec!(20), TaxCategory::S),
+        Decimal::new(1020, 2),
+        TaxItem::new(Decimal::from(20), TaxCategory::S),
     )
     .with_description("Schraubenzieher"),
 )

@@ -15,8 +15,9 @@ pub(crate) mod xml;
 
 #[cfg(test)]
 mod tests {
+    use rust_decimal::Decimal;
+
     use super::*;
-    use rust_decimal_macros::dec;
 
     use address::Address;
     use biller::Biller;
@@ -60,28 +61,31 @@ mod tests {
         )
         .with_item(
             DetailsItem::new(
-                dec!(100),
+                Decimal::from(100),
                 "STK",
-                dec!(10.20),
-                TaxItem::new(dec!(20), TaxCategory::S),
+                Decimal::new(1020, 2),
+                TaxItem::new(Decimal::from(20), TaxCategory::S),
             )
             .with_position_number(1)
             .with_description("Schraubenzieher")
-            .with_base_quantity(dec!(1)),
+            .with_base_quantity(Decimal::from(1)),
         )
         .with_item(
             DetailsItem::new(
-                dec!(1),
+                Decimal::from(1),
                 "STK",
-                dec!(5.00),
-                TaxItem::new(dec!(10), TaxCategory::AA),
+                Decimal::from(5),
+                TaxItem::new(Decimal::from(10), TaxCategory::AA),
             )
             .with_position_number(2)
             .with_description("Handbuch zur Schraube")
-            .with_base_quantity(dec!(1))
+            .with_base_quantity(Decimal::from(1))
             .with_reduction(
-                ReductionListLineItem::new(dec!(5), ReductionAndSurchargeValue::Amount(dec!(2)))
-                    .with_comment("reduction"),
+                ReductionListLineItem::new(
+                    Decimal::from(5),
+                    ReductionAndSurchargeValue::Amount(Decimal::from(2)),
+                )
+                .with_comment("reduction"),
             ),
         )
         .with_document_title("An invoice")

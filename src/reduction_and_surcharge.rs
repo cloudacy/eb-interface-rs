@@ -205,7 +205,6 @@ impl ToXml for ReductionAndSurchargeListLineItemDetails<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal_macros::dec;
 
     use crate::xml::ToXml;
 
@@ -214,14 +213,17 @@ mod tests {
         let result = ReductionAndSurchargeListLineItemDetails::new()
             .with_reduction(
                 ReductionListLineItem::new(
-                    dec!(100),
-                    ReductionAndSurchargeValue::Percentage(dec!(2)),
+                    Decimal::from(100),
+                    ReductionAndSurchargeValue::Percentage(Decimal::from(2)),
                 )
                 .with_comment("reduction"),
             )
             .with_surcharge(
-                SurchargeListLineItem::new(dec!(200), ReductionAndSurchargeValue::Amount(dec!(3)))
-                    .with_comment("surcharge"),
+                SurchargeListLineItem::new(
+                    Decimal::from(200),
+                    ReductionAndSurchargeValue::Amount(Decimal::from(3)),
+                )
+                .with_comment("surcharge"),
             )
             .to_xml();
 
@@ -232,13 +234,16 @@ mod tests {
 
         let result = ReductionAndSurchargeListLineItemDetails::new()
             .with_reduction(
-                ReductionListLineItem::new(dec!(100), ReductionAndSurchargeValue::Amount(dec!(2)))
-                    .with_comment("reduction"),
+                ReductionListLineItem::new(
+                    Decimal::from(100),
+                    ReductionAndSurchargeValue::Amount(Decimal::from(2)),
+                )
+                .with_comment("reduction"),
             )
             .with_surcharge(
                 SurchargeListLineItem::new(
-                    dec!(200),
-                    ReductionAndSurchargeValue::Percentage(dec!(3)),
+                    Decimal::from(200),
+                    ReductionAndSurchargeValue::Percentage(Decimal::from(3)),
                 )
                 .with_comment("surcharge"),
             )
@@ -252,8 +257,11 @@ mod tests {
         let result = ReductionAndSurchargeListLineItemDetails::new()
             .with_reduction(
                 ReductionListLineItem::new(
-                    dec!(100),
-                    ReductionAndSurchargeValue::PercentageAndAmount(dec!(2), dec!(3.4599)),
+                    Decimal::from(100),
+                    ReductionAndSurchargeValue::PercentageAndAmount(
+                        Decimal::from(2),
+                        Decimal::new(34599, 4),
+                    ),
                 )
                 .with_comment("reduction"),
             )
