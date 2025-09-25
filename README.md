@@ -10,8 +10,8 @@
 
 #### rounding
 
-- `eb-interface-rs` rounds after all calculations are done
-- `eb-interface-rs` uses the [`MidpointAwayFromZero`](https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html#variant.MidpointAwayFromZero) rounding strategy
+- `eb_interface_rs` rounds after all calculations are done
+- `eb_interface_rs` uses the [`MidpointAwayFromZero`](https://docs.rs/rust_decimal/latest/rust_decimal/enum.RoundingStrategy.html#variant.MidpointAwayFromZero) rounding strategy
 
 ## Feature set
 
@@ -55,7 +55,3 @@ Invoice::new(
 Reference: https://www.wko.at/service/netzwerke/ebinterface-aktuelle-version-xml-rechnungsstandard.html
 
 Validate: https://labs.ebinterface.at/labs
-
-```sh
-cargo watch -x test
-```
