@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use regex::Regex;
 
 use crate::xml::{ToXml, XmlElement};
@@ -39,6 +41,17 @@ pub struct PaymentMethodSEPADirectDebit<'a> {
     debit_collection_date: Option<&'a str>,
 }
 
+const BIC_REGEX_STR: &str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
+
+trait MatchBicRegex {
+    fn match_bic_regex(bic: &str) -> bool {
+        static BIC_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(BIC_REGEX_STR).unwrap());
+        !BIC_REGEX.is_match(bic)
+    }
+}
+
+impl MatchBicRegex for PaymentMethodSEPADirectDebit<'_> {}
+
 impl<'a> PaymentMethodSEPADirectDebit<'a> {
     pub fn new() -> PaymentMethodSEPADirectDebit<'a> {
         PaymentMethodSEPADirectDebit {
@@ -52,10 +65,8 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
     }
 
     pub fn with_bic(mut self, bic: &'a str) -> Result<Self, String> {
-        let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
-        let bic_regex = Regex::new(bic_regex_str).unwrap();
-        if !bic_regex.is_match(bic) {
-            return Err(format!("BIC {bic} doesn't match regex {bic_regex_str}!"));
+        if !PaymentMethodSEPADirectDebit::match_bic_regex(bic) {
+            return Err(format!("BIC {bic} doesn't match regex {BIC_REGEX_STR}!"));
         }
         self.bic = Some(bic);
         Ok(self)
@@ -99,11 +110,11 @@ impl<'a> PaymentMethodSEPADirectDebit<'a> {
         mut self,
         debit_collection_date: &'a str,
     ) -> Result<Self, String> {
-        let date_regex_str = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
-        let date_regex = Regex::new(date_regex_str).unwrap();
-        if !date_regex.is_match(debit_collection_date) {
+        static DATE_REGEX_STR: &str = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
+        static DATE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(DATE_REGEX_STR).unwrap());
+        if !DATE_REGEX.is_match(debit_collection_date) {
             return Err(format!(
-                "DebitCollectionDate {debit_collection_date} doesn't match regex {date_regex_str}!"
+                "DebitCollectionDate {debit_collection_date} doesn't match regex {DATE_REGEX_STR}!"
             ));
         }
         self.debit_collection_date = Some(debit_collection_date);
@@ -173,6 +184,8 @@ pub struct PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
     bank_account_owner: Option<&'a str>,
 }
 
+impl MatchBicRegex for PaymentMethodUniversalBankTransactionBeneficiaryAccount<'_> {}
+
 impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
     pub fn new() -> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
         PaymentMethodUniversalBankTransactionBeneficiaryAccount {
@@ -203,10 +216,8 @@ impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
     }
 
     pub fn with_bic(mut self, bic: &'a str) -> Result<Self, String> {
-        let bic_regex_str = r"^[0-9A-Za-z]{8}([0-9A-Za-z]{3})?$";
-        let bic_regex = Regex::new(bic_regex_str).unwrap();
-        if !bic_regex.is_match(bic) {
-            return Err(format!("BIC {bic} doesn't match regex {bic_regex_str}!"));
+        if !PaymentMethodUniversalBankTransactionBeneficiaryAccount::match_bic_regex(bic) {
+            return Err(format!("BIC {bic} doesn't match regex {BIC_REGEX_STR}!"));
         }
         self.bic = Some(bic);
         Ok(self)
@@ -356,9 +367,10 @@ pub struct PaymentMethodPaymentCard<'a> {
 
 impl<'a> PaymentMethodPaymentCard<'a> {
     pub fn new(primary_account_number: &'a str) -> Result<PaymentMethodPaymentCard<'a>, String> {
-        let payment_card_regex_str = r"^[0-9]{0,6}\*[0-9]{0,4}$";
-        let payment_card_regex = Regex::new(payment_card_regex_str).unwrap();
-        if !payment_card_regex.is_match(primary_account_number) {
+        static PAYMENT_CARD_REGEX_STR: &str = r"^[0-9]{0,6}\*[0-9]{0,4}$";
+        static PAYMENT_CARD_REGEX: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(PAYMENT_CARD_REGEX_STR).unwrap());
+        if !PAYMENT_CARD_REGEX.is_match(primary_account_number) {
             return Err(format!(
                 "Invalid primary account number \"{primary_account_number}\". Only provide at most the first 6 and last 4 digits, separated with a \"*\".",
             ));

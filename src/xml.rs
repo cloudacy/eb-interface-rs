@@ -1,11 +1,10 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::LazyLock};
 
-use once_cell::sync::Lazy;
 use regex::Regex;
 
-static XML_ESCAPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new("[&\"'<>]").unwrap());
-
 fn xml_escape(s: &mut Cow<str>) {
+    static XML_ESCAPE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new("[&\"'<>]").unwrap());
+
     let r = s.as_ref();
     if let Some(m) = XML_ESCAPE_REGEX.find(r) {
         let mut o = r[0..m.start()].to_string();
