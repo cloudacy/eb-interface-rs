@@ -66,7 +66,7 @@ impl<'a> Invoice<'a> {
         self
     }
 
-    pub fn with_payment_method(&mut self, payment_method: PaymentMethod<'a>) -> &Self {
+    pub fn with_payment_method(mut self, payment_method: PaymentMethod<'a>) -> Self {
         self.payment_method = Some(payment_method);
         self
     }
