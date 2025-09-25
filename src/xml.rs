@@ -1,14 +1,9 @@
-use std::{borrow::Cow, sync::LazyLock};
-
-use regex::Regex;
+use std::borrow::Cow;
 
 fn xml_escape(s: &mut Cow<str>) {
-    static XML_ESCAPE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new("[&\"'<>]").unwrap());
-
-    let r = s.as_ref();
-    if let Some(m) = XML_ESCAPE_REGEX.find(r) {
-        let mut o = r[0..m.start()].to_string();
-        for c in r[m.start()..].chars() {
+    if s.contains(['&', '"', '\'', '<', '>']) {
+        let mut o = String::with_capacity(s.len());
+        for c in s.chars() {
             match c {
                 '&' => o.push_str("&amp;"),
                 '"' => o.push_str("&quot;"),
