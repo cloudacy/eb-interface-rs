@@ -1,5 +1,5 @@
 [package]
-name = "eb-interface-rs"
+name = "eb_interface_rs"
 version = "0.0.16"
 edition = "2024"
 license = "MIT"
