@@ -16,7 +16,7 @@ pub struct InvoiceRecipient<'a> {
 }
 
 impl<'a> InvoiceRecipient<'a> {
-    pub fn new(vat_identification_number: &str) -> InvoiceRecipient {
+    pub fn new(vat_identification_number: &'a str) -> Self {
         InvoiceRecipient {
             vat_identification_number,
             ..Default::default()

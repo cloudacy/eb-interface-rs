@@ -52,7 +52,7 @@ pub struct TaxItem {
 }
 
 impl TaxItem {
-    pub fn new(tax_percent: Decimal, tax_category: TaxCategory) -> TaxItem {
+    pub fn new(tax_percent: Decimal, tax_category: TaxCategory) -> Self {
         TaxItem {
             tax_percent,
             tax_category,

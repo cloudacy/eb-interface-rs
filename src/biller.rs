@@ -16,7 +16,7 @@ pub struct Biller<'a> {
 }
 
 impl<'a> Biller<'a> {
-    pub fn new(vat_identification_number: &str) -> Biller {
+    pub fn new(vat_identification_number: &'a str) -> Self {
         Biller {
             vat_identification_number,
             ..Default::default()

@@ -9,7 +9,7 @@ pub struct Contact<'a> {
 }
 
 impl<'a> Contact<'a> {
-    pub fn new(name: &str) -> Contact {
+    pub fn new(name: &'a str) -> Self {
         Contact {
             name,
             ..Default::default()

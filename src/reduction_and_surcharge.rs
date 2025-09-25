@@ -18,10 +18,7 @@ struct ReductionAndSurchargeListLineItemBase<'a> {
 }
 
 impl<'a> ReductionAndSurchargeListLineItemBase<'a> {
-    fn new(
-        base_amount: Decimal,
-        value: ReductionAndSurchargeValue,
-    ) -> ReductionAndSurchargeListLineItemBase<'a> {
+    fn new(base_amount: Decimal, value: ReductionAndSurchargeValue) -> Self {
         ReductionAndSurchargeListLineItemBase {
             base_amount,
             value,
@@ -42,8 +39,10 @@ impl<'a> ReductionAndSurchargeListLineItemBase<'a> {
     }
 
     fn to_xml_elements(&self) -> Vec<XmlElement> {
-        let mut es = vec![XmlElement::new("BaseAmount")
-            .with_text(self.base_amount.clone_with_scale(2).to_string())];
+        let mut es = vec![
+            XmlElement::new("BaseAmount")
+                .with_text(self.base_amount.clone_with_scale(2).to_string()),
+        ];
 
         match self.value {
             ReductionAndSurchargeValue::Percentage(percentage) => {
@@ -149,7 +148,7 @@ pub struct ReductionAndSurchargeListLineItemDetails<'a> {
 }
 
 impl<'a> ReductionAndSurchargeListLineItemDetails<'a> {
-    pub fn new() -> ReductionAndSurchargeListLineItemDetails<'a> {
+    pub fn new() -> Self {
         ReductionAndSurchargeListLineItemDetails {
             ..Default::default()
         }

@@ -53,7 +53,7 @@ trait MatchBicRegex {
 impl MatchBicRegex for PaymentMethodSEPADirectDebit<'_> {}
 
 impl<'a> PaymentMethodSEPADirectDebit<'a> {
-    pub fn new() -> PaymentMethodSEPADirectDebit<'a> {
+    pub fn new() -> Self {
         PaymentMethodSEPADirectDebit {
             ..Default::default()
         }
@@ -163,10 +163,7 @@ pub struct PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a> {
 }
 
 impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a> {
-    pub fn new(
-        bank_code: i64,
-        bank_code_type: &'a str,
-    ) -> PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode<'a> {
+    pub fn new(bank_code: i64, bank_code_type: &'a str) -> Self {
         PaymentMethodUniversalBankTransactionBeneficiaryAccountBankCode {
             bank_code,
             bank_code_type,
@@ -187,7 +184,7 @@ pub struct PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
 impl MatchBicRegex for PaymentMethodUniversalBankTransactionBeneficiaryAccount<'_> {}
 
 impl<'a> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
-    pub fn new() -> PaymentMethodUniversalBankTransactionBeneficiaryAccount<'a> {
+    pub fn new() -> Self {
         PaymentMethodUniversalBankTransactionBeneficiaryAccount {
             ..Default::default()
         }
@@ -292,7 +289,7 @@ pub struct PaymentMethodUniversalBankTransaction<'a> {
 }
 
 impl<'a> PaymentMethodUniversalBankTransaction<'a> {
-    pub fn new() -> PaymentMethodUniversalBankTransaction<'a> {
+    pub fn new() -> Self {
         PaymentMethodUniversalBankTransaction {
             ..Default::default()
         }
@@ -366,7 +363,7 @@ pub struct PaymentMethodPaymentCard<'a> {
 }
 
 impl<'a> PaymentMethodPaymentCard<'a> {
-    pub fn new(primary_account_number: &'a str) -> Result<PaymentMethodPaymentCard<'a>, String> {
+    pub fn new(primary_account_number: &'a str) -> Result<Self, String> {
         static PAYMENT_CARD_REGEX_STR: &str = r"^[0-9]{0,6}\*[0-9]{0,4}$";
         static PAYMENT_CARD_REGEX: LazyLock<Regex> =
             LazyLock::new(|| Regex::new(PAYMENT_CARD_REGEX_STR).unwrap());

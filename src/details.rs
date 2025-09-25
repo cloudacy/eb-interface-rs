@@ -22,12 +22,7 @@ pub struct DetailsItem<'a> {
 }
 
 impl<'a> DetailsItem<'a> {
-    pub fn new(
-        quantity: Decimal,
-        unit: &'a str,
-        unit_price: Decimal,
-        tax_item: TaxItem,
-    ) -> DetailsItem<'a> {
+    pub fn new(quantity: Decimal, unit: &'a str, unit_price: Decimal, tax_item: TaxItem) -> Self {
         DetailsItem {
             quantity,
             unit,

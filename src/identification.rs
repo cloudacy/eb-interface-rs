@@ -48,8 +48,8 @@ pub struct FurtherIdentification<'a> {
     id_type: FurtherIdentificationType,
 }
 
-impl FurtherIdentification<'_> {
-    pub fn new(id: &str, id_type: FurtherIdentificationType) -> FurtherIdentification {
+impl<'a> FurtherIdentification<'a> {
+    pub fn new(id: &'a str, id_type: FurtherIdentificationType) -> Self {
         FurtherIdentification { id, id_type }
     }
 }

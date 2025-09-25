@@ -8,7 +8,7 @@ pub struct OrderReference<'a> {
 }
 
 impl<'a> OrderReference<'a> {
-    pub fn new(order_id: &str) -> OrderReference {
+    pub fn new(order_id: &'a str) -> Self {
         OrderReference {
             order_id,
             ..Default::default()

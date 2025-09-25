@@ -13,7 +13,7 @@ pub struct Address<'a> {
 }
 
 impl<'a> Address<'a> {
-    pub fn new(name: &'a str, town: &'a str, zip: &'a str, country: &'a str) -> Address<'a> {
+    pub fn new(name: &'a str, town: &'a str, zip: &'a str, country: &'a str) -> Self {
         Address {
             name,
             town,
