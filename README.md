@@ -1,4 +1,4 @@
-# eb-interface-rs
+# eb_interface_rs
 
 ![status](https://github.com/cloudacy/eb-interface-rs/actions/workflows/rust.yml/badge.svg)
 
