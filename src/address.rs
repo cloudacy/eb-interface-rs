@@ -64,13 +64,13 @@ impl ToXml for Address<'_> {
 
         if let Some(phone_numbers) = &self.phone {
             for phone_number in phone_numbers {
-                e = e.with_text_element("Phone", phone_number);
+                e = e.with_text_element("Phone", *phone_number);
             }
         }
 
         if let Some(email_addresses) = &self.email {
             for email_address in email_addresses {
-                e = e.with_text_element("Email", email_address);
+                e = e.with_text_element("Email", *email_address);
             }
         }
 

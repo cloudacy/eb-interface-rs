@@ -53,22 +53,21 @@ pub(crate) struct XmlElement {
 }
 
 impl XmlElement {
-    pub(crate) fn new(name: &str) -> Self {
+    pub(crate) fn new<'a>(name: impl Into<Cow<'a, str>>) -> Self {
+        let mut name = name.into();
+        xml_escape(&mut name);
+
         XmlElement {
             name: name.to_string(),
             ..Default::default()
         }
     }
 
-    pub(crate) fn with_attr<'a>(
-        mut self,
-        name: impl AsRef<str> + 'a,
-        value: impl AsRef<str> + 'a,
-    ) -> Self {
+    pub(crate) fn with_attr<'a>(mut self, name: impl Into<Cow<'a, str>>, value: impl Into<Cow<'a, str>>) -> Self {
         self.attrs.get_or_insert_with(Vec::new).push(
             XmlAttribute {
-                name: Cow::from(name.as_ref()),
-                value: Cow::from(value.as_ref()),
+                name: name.into(),
+                value: value.into(),
             }
             .to_xml(),
         );
@@ -82,49 +81,26 @@ impl XmlElement {
 
     pub(crate) fn with_text_element<'a>(
         mut self,
-        name: &'a str,
-        text: impl AsRef<str> + 'a,
+        name: impl Into<Cow<'a, str>>,
+        text: impl Into<Cow<'a, str>>,
     ) -> Self {
-        self.body.push(
-            XmlElement {
-                name: name.to_owned(),
-                body: vec![
-                    XmlText {
-                        text: Cow::from(text.as_ref()),
-                    }
-                    .to_xml(),
-                ],
-                ..Default::default()
-            }
-            .to_xml(),
-        );
+        self.body.push(XmlElement::new(name).with_text(text).to_xml());
         self
     }
 
-    pub(crate) fn with_text<'a>(mut self, text: impl AsRef<str> + 'a) -> Self {
-        self.body.push(
-            XmlText {
-                text: Cow::from(text.as_ref()),
-            }
-            .to_xml(),
-        );
+    pub(crate) fn with_text<'a>(mut self, text: impl Into<Cow<'a, str>>) -> Self {
+        self.body.push(XmlText { text: text.into() }.to_xml());
         self
     }
 }
 
 impl ToXml for XmlElement {
     fn to_xml(&self) -> String {
-        let mut name = Cow::from(&self.name);
-        xml_escape(&mut name);
-
         let attrs = self.attrs.as_ref().map_or("".to_string(), |a| a.join(" "));
 
         let body = self.body.join("");
 
-        format!(
-            "<{name}{}{attrs}>{body}</{name}>",
-            if !attrs.is_empty() { " " } else { "" }
-        )
+        format!("<{}{}{attrs}>{body}</{}>", self.name, if !attrs.is_empty() { " " } else { "" }, self.name)
     }
 }
 
@@ -157,10 +133,7 @@ mod tests {
         assert_eq!(t5.as_ref(), "&gt;");
         assert_eq!(t6.as_ref(), "&amp;&quot;");
         assert_eq!(t7.as_ref(), "&amp;ü&quot;");
-        assert_eq!(
-            t8.as_ref(),
-            "&lt;test foo=&quot;bar&quot;&gt;baz&lt;/test&gt;"
-        );
+        assert_eq!(t8.as_ref(), "&lt;test foo=&quot;bar&quot;&gt;baz&lt;/test&gt;");
     }
 
     #[test]
@@ -170,10 +143,7 @@ mod tests {
 
     #[test]
     fn generates_xml_text() {
-        assert_eq!(
-            XmlElement::new("foo").with_text("<bar&>").to_xml(),
-            "<foo>&lt;bar&amp;&gt;</foo>"
-        );
+        assert_eq!(XmlElement::new("foo").with_text("<bar&>").to_xml(), "<foo>&lt;bar&amp;&gt;</foo>");
     }
 
     #[test]
@@ -190,13 +160,7 @@ mod tests {
 
     #[test]
     fn generates_xml_attribute() {
-        assert_eq!(
-            XmlElement::new("foo")
-                .with_attr("a", "b")
-                .with_text("bar")
-                .to_xml(),
-            "<foo a=\"b\">bar</foo>"
-        );
+        assert_eq!(XmlElement::new("foo").with_attr("a", "b").with_text("bar").to_xml(), "<foo a=\"b\">bar</foo>");
     }
 
     #[test]
@@ -213,12 +177,7 @@ mod tests {
 
     #[test]
     fn generates_nested_xml_element() {
-        assert_eq!(
-            XmlElement::new("foo")
-                .with_element(&XmlElement::new("a"))
-                .to_xml(),
-            "<foo><a></a></foo>"
-        );
+        assert_eq!(XmlElement::new("foo").with_element(&XmlElement::new("a")).to_xml(), "<foo><a></a></foo>");
     }
 
     #[test]
@@ -273,6 +232,14 @@ mod tests {
                 .with_element(&XmlElement::new("b").with_attr("c", "\"d&e"))
                 .to_xml(),
             "<a foo=\"b&lt;&gt;ar\"><b c=\"&quot;d&amp;e\"></b></a>"
+        );
+    }
+
+    #[test]
+    fn escapes_with_text_element() {
+        assert_eq!(
+            XmlElement::new("a&b").with_text_element("c&d", "f&g").to_xml(),
+            "<a&amp;b><c&amp;d>f&amp;g</c&amp;d></a&amp;b>"
         );
     }
 }

@@ -97,7 +97,7 @@ impl ToXml for DetailsItem<'_> {
 
         // Description(s).
         for description in &self.description {
-            e = e.with_text_element("Description", description);
+            e = e.with_text_element("Description", *description);
         }
 
         // Quantity.
